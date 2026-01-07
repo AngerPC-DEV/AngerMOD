@@ -1,4 +1,4 @@
--- [[ ⛧ AngerPC ⛧ V110 SWITCHABLE ]] --
+-- [[ ⛧ AngerPC ⛧ V111 LOGO CONTROL ]] --
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -35,7 +35,7 @@ local CurrentThemeIndex = 1
 
 -- [[ 1. GUI SETUP ]] --
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "AngerGUI_V110"
+ScreenGui.Name = "AngerGUI_V111"
 if game.CoreGui:FindFirstChild("RobloxGui") then
     ScreenGui.Parent = game.CoreGui 
 else
@@ -94,7 +94,7 @@ local btnTabAI = MakeTab("AI CHAT")
 local btnTabUI = MakeTab("UI EDIT")
 
 -- TITLE
-local Title = Instance.new("TextLabel", Main); Title.Size=UDim2.new(1,0,0,45); Title.BackgroundTransparency=1; Title.Text="AngerPC V110"; Title.Font=Enum.Font.SciFi; Title.TextSize=24; Title.TextColor3=Color3.new(1,1,1); table.insert(RGB_Objects, {Type="Text", Instance=Title})
+local Title = Instance.new("TextLabel", Main); Title.Size=UDim2.new(1,0,0,45); Title.BackgroundTransparency=1; Title.Text="AngerPC V111"; Title.Font=Enum.Font.SciFi; Title.TextSize=24; Title.TextColor3=Color3.new(1,1,1); table.insert(RGB_Objects, {Type="Text", Instance=Title})
 
 -- // PAGES // --
 local PageMain = Instance.new("ScrollingFrame", Main); PageMain.Size=UDim2.new(1,-20,0.78,0); PageMain.Position=UDim2.new(0,10,0.18,0); PageMain.BackgroundTransparency=1; PageMain.ScrollBarThickness=2; PageMain.Visible=true; Instance.new("UIListLayout", PageMain).Padding=UDim.new(0,8)
@@ -150,11 +150,11 @@ local btnDn = Instance.new("TextButton", FlyGui); btnDn.Size=UDim2.new(1,0,0,60)
 
 -- // LOGIN FRAME // --
 local LFrame = Instance.new("Frame", ScreenGui); LFrame.Size=UDim2.new(0,300,0,150); LFrame.Position=UDim2.new(0.5,-150,0.5,-75); LFrame.BackgroundColor3=Color3.fromRGB(12,12,12); style(LFrame,8,2)
-local LI = Instance.new("TextBox", LFrame); LI.Size=UDim2.new(0.8,0,0,40); LI.Position=UDim2.new(0.1,0,0.2,0); LI.BackgroundColor3=Color3.fromRGB(20,20,20); LI.TextColor3=Color3.new(1,1,1); LI.Text=""; LI.PlaceholderText="AngerPC V110"; style(LI)
+local LI = Instance.new("TextBox", LFrame); LI.Size=UDim2.new(0.8,0,0,40); LI.Position=UDim2.new(0.1,0,0.2,0); LI.BackgroundColor3=Color3.fromRGB(20,20,20); LI.TextColor3=Color3.new(1,1,1); LI.Text=""; LI.PlaceholderText="AngerPC V111"; style(LI)
 local LB = Instance.new("TextButton", LFrame); LB.Size=UDim2.new(0.5,0,0,40); LB.Position=UDim2.new(0.25,0,0.6,0); LB.BackgroundColor3=Color3.fromRGB(25,25,25); LB.Text="LOGIN"; LB.TextColor3=Color3.new(1,1,1); style(LB)
 
 -- [[ 2. LOGIC ]] --
-local States = {AI = false} 
+local States = {AI = false, Watermark = true} -- ВКЛЮЧЕНО ПО УМОЛЧАНИЮ
 local valSmooth, valHitbox, valFlySpeed, valSpeed, valBypassSpeed, valJumpPower, valRipple, valGhostRate = 0.1, 5, 5, 50, 0.11, 100, 15, 0.05
 local up, down = false, false
 
@@ -184,6 +184,10 @@ local function addOption(name, key, useInput, defaultInputVal, inputCallback)
     local f = Instance.new("Frame", PageMain); f.Size = UDim2.new(1, 0, 0, 40); f.BackgroundTransparency = 1
     local btnSize = useInput and 0.5 or 0.75
     local b = Instance.new("TextButton", f); b.Size = UDim2.new(btnSize, -5, 1, 0); b.Text = name; b.BackgroundColor3 = Color3.fromRGB(20, 20, 20); b.TextColor3 = Color3.new(1,1,1); style(b)
+    
+    -- Синхронизация цвета кнопки при старте
+    if States[key] then b.BackgroundColor3 = Color3.fromRGB(40, 40, 40) end
+
     local hk = makeBind(name, function() States[key] = not States[key]; if key == "Fly" then FlyGui.Visible = States.Fly end end)
     b.MouseButton1Click:Connect(function() States[key] = not States[key]; b.BackgroundColor3 = States[key] and Color3.fromRGB(40, 40, 40) or Color3.fromRGB(20, 20, 20); if key == "Fly" then FlyGui.Visible = States.Fly end end)
     local bb = Instance.new("TextButton", f); bb.Size = UDim2.new(0.25, 0, 1, 0); bb.Position = UDim2.new(0.75, 0, 0, 0); bb.Text = "BIND"; style(bb)
@@ -195,6 +199,7 @@ local function addOption(name, key, useInput, defaultInputVal, inputCallback)
 end
 
 -- [ OPTIONS ] --
+addOption("SHOW LOGO", "Watermark", false) -- NEW OPTION
 addOption("HUMAN AIM", "Aim", true, valSmooth, function(v) valSmooth = math.clamp(v, 0.01, 1) end)
 addOption("SPEED BYPASS", "SpdBypass", true, valBypassSpeed, function(v) valBypassSpeed = v end)
 addOption("UNLOCK CAM", "UnlockAll", false)
@@ -204,7 +209,7 @@ addOption("FLY BYPASS", "Fly", true, valFlySpeed, function(v) valFlySpeed = v en
 addOption("RAGE SPEED", "Spd", true, valSpeed, function(v) valSpeed = v end)
 addOption("SUPER JUMP", "Jump", true, valJumpPower, function(v) valJumpPower = v end)
 addOption("JUMP RIPPLE", "Circle", true, valRipple, function(v) valRipple = v end)
-addOption("PENTAGRAM MODE", "UsePentagram", false) -- NEW OPTION
+addOption("PENTAGRAM MODE", "UsePentagram", false) 
 addOption("GHOST TRAIL", "Ghosts", true, valGhostRate, function(v) valGhostRate = math.clamp(v, 0.01, 2) end) 
 addOption("ESP HIGHLIGHT", "Esp", false)
 addOption("SKIN COLOR", "RGB", false) 
@@ -227,7 +232,7 @@ UnlockBtn.MouseButton1Click:Connect(function()
     end
 end)
 
-local ConfigName = "AngerConfig_V110.json"
+local ConfigName = "AngerConfig_V111.json"
 SaveBtn.MouseButton1Click:Connect(function()
     local data = {}
     for _, obj in pairs(Movable_Objects) do data[obj.Name] = {X_S=obj.Position.X.Scale, X_O=obj.Position.X.Offset, Y_S=obj.Position.Y.Scale, Y_O=obj.Position.Y.Offset} end
@@ -301,7 +306,6 @@ local function SpawnRipple()
     p.CanCollide = false
     
     if States.UsePentagram then
-        -- IMAGE MODE (PENTAGRAM)
         p.Transparency = 1; p.Size = Vector3.new(1, 0.05, 1); p.CFrame = CFrame.new(spawnPos)
         local sg = Instance.new("SurfaceGui", p); sg.Face = Enum.NormalId.Top; sg.LightInfluence = 0; sg.AlwaysOnTop = false 
         local img = Instance.new("ImageLabel", sg); img.Size = UDim2.new(1, 0, 1, 0); img.BackgroundTransparency = 1; img.ImageColor3 = Color3.new(1, 1, 1) 
@@ -311,13 +315,12 @@ local function SpawnRipple()
         TweenService:Create(img, TweenInfo.new(1.5, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {ImageTransparency = 1}):Play()
         Debris:AddItem(p, 1.5)
     else
-        -- CLASSIC MODE (NO IMAGE)
         p.Shape = Enum.PartType.Cylinder
         p.Material = Enum.Material.Neon
         p.Size = Vector3.new(0.1, 1, 1)
         p.CFrame = CFrame.new(spawnPos) * CFrame.Angles(0, 0, math.rad(90))
-        p.Color = Color3.new(1,1,1) -- Will be updated by RenderLoop
-        table.insert(RGB_Objects, {Type = "Part", Instance = p}) -- NEW TYPE
+        p.Color = Color3.new(1,1,1) 
+        table.insert(RGB_Objects, {Type = "Part", Instance = p}) 
         TweenService:Create(p, TweenInfo.new(1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = Vector3.new(0.1, valRipple, valRipple), Transparency = 1}):Play()
         Debris:AddItem(p, 1)
     end
@@ -357,10 +360,14 @@ RunService.RenderStepped:Connect(function()
             if obj.Type == "Stroke" then obj.Instance.Color = activeColor 
             elseif obj.Type == "Text" then obj.Instance.TextColor3 = activeColor 
             elseif obj.Type == "Image" then obj.Instance.ImageColor3 = activeColor
-            elseif obj.Type == "Part" then obj.Instance.Color = activeColor -- ADDED SUPPORT FOR CLASSIC RIPPLE
+            elseif obj.Type == "Part" then obj.Instance.Color = activeColor 
             end 
         else table.remove(RGB_Objects, i) end 
     end
+    
+    -- CONTROL WATERMARK VISIBILITY
+    local wm = ScreenGui.Parent:FindFirstChild("AngerWatermark")
+    if wm then wm.Enabled = States.Watermark end
 
     if PageInfo.Visible then InfoLabel.Text = string.format("SESSION:\nUser: %s\nID: %s\nFPS: %d\nPing: %d ms", Player.Name, SessionID, math.floor(workspace:GetRealPhysicsFPS()), math.floor(Stats.Network.ServerStatsItem["Data Ping"]:GetValue())) end
 
