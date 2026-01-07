@@ -1,4 +1,4 @@
--- [[ ⛧ AngerPC ⛧ V107 LEGACY REMASTER (BASED ON V104) ]] --
+-- [[ ⛧ AngerPC ⛧ V107 LEGACY REMASTER (MODDED VERSION) ]] --
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -19,14 +19,14 @@ local StartTime = tick()
 
 -- [[ 1. GUI SETUP ]] --
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "AngerGUI_V107"
+ScreenGui.Name = "AngerGUI_V107_MOD"
 if game.CoreGui:FindFirstChild("RobloxGui") then
     ScreenGui.Parent = game.CoreGui 
 else
     ScreenGui.Parent = Player:WaitForChild("PlayerGui")
 end
 
--- DEATH SCREEN (С 104 версии)
+-- DEATH SCREEN
 local DeathScreen = Instance.new("ScreenGui", Player:WaitForChild("PlayerGui"))
 DeathScreen.Name = "AngerDeath"
 DeathScreen.Enabled = false
@@ -41,7 +41,7 @@ DeathLabel.TextStrokeTransparency = 0
 
 -- LISTS
 local RGB_Objects = {} 
-local Movable_Objects = {} -- То, что можно двигать
+local Movable_Objects = {} 
 
 local function style(obj, radius, thickness)
     local uiC = Instance.new("UICorner", obj); uiC.CornerRadius = UDim.new(0, radius or 6)
@@ -50,18 +50,18 @@ local function style(obj, radius, thickness)
     return uiS
 end
 
--- // MAIN MENU (Стиль 104) // --
+-- // MAIN MENU // --
 local Main = Instance.new("Frame", ScreenGui)
-Main.Size = UDim2.new(0, 420, 0, 480) -- Чуть выше из-за вкладок
+Main.Size = UDim2.new(0, 420, 0, 480) 
 Main.Position = UDim2.new(0.1, 0, 0.2, 0)
 Main.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
 Main.Visible = false 
 Main.Active = true
 Main.Draggable = true
 style(Main, 8, 2)
-table.insert(Movable_Objects, Main) -- Меню можно сохранять
+table.insert(Movable_Objects, Main)
 
--- TABS (Простые, чтобы не ломать V104)
+-- TABS
 local TabFrame = Instance.new("Frame", Main)
 TabFrame.Size = UDim2.new(1, -20, 0, 30)
 TabFrame.Position = UDim2.new(0, 10, 0, 50)
@@ -77,7 +77,7 @@ local btnTabInfo = MakeTab("INFO")
 local btnTabUI = MakeTab("UI EDIT")
 
 -- TITLE
-local Title = Instance.new("TextLabel", Main); Title.Size=UDim2.new(1,0,0,45); Title.BackgroundTransparency=1; Title.Text="AngerPC V107 LEGACY"; Title.Font=Enum.Font.SciFi; Title.TextSize=24; Title.TextColor3=Color3.new(1,1,1); table.insert(RGB_Objects, {Type="Text", Instance=Title})
+local Title = Instance.new("TextLabel", Main); Title.Size=UDim2.new(1,0,0,45); Title.BackgroundTransparency=1; Title.Text="AngerPC V107 MODDED"; Title.Font=Enum.Font.SciFi; Title.TextSize=24; Title.TextColor3=Color3.new(1,1,1); table.insert(RGB_Objects, {Type="Text", Instance=Title})
 
 -- // PAGES // --
 local PageMain = Instance.new("ScrollingFrame", Main); PageMain.Size=UDim2.new(1,-20,0.78,0); PageMain.Position=UDim2.new(0,10,0.18,0); PageMain.BackgroundTransparency=1; PageMain.ScrollBarThickness=2; PageMain.Visible=true; Instance.new("UIListLayout", PageMain).Padding=UDim.new(0,8)
@@ -108,7 +108,7 @@ local LFrame = Instance.new("Frame", ScreenGui); LFrame.Size=UDim2.new(0,300,0,1
 local LI = Instance.new("TextBox", LFrame); LI.Size=UDim2.new(0.8,0,0,40); LI.Position=UDim2.new(0.1,0,0.2,0); LI.BackgroundColor3=Color3.fromRGB(20,20,20); LI.TextColor3=Color3.new(1,1,1); LI.Text=""; LI.PlaceholderText="AngerPC V107"; style(LI)
 local LB = Instance.new("TextButton", LFrame); LB.Size=UDim2.new(0.5,0,0,40); LB.Position=UDim2.new(0.25,0,0.6,0); LB.BackgroundColor3=Color3.fromRGB(25,25,25); LB.Text="LOGIN"; LB.TextColor3=Color3.new(1,1,1); style(LB)
 
--- [[ 2. LOGIC FROM V104 ]] --
+-- [[ 2. LOGIC ]] --
 local States = {}
 local valSmooth, valHitbox, valFlySpeed, valSpeed, valBypassSpeed, valJumpPower, valRipple, valGhostRate = 0.1, 5, 5, 50, 0.11, 100, 15, 0.05
 local up, down = false, false
@@ -135,7 +135,7 @@ local function addOption(name, key, useInput, defaultInputVal, inputCallback)
     end
 end
 
--- [ OPTIONS (V104 LIST) ] --
+-- [ OPTIONS ] --
 addOption("HUMAN AIM", "Aim", true, valSmooth, function(v) valSmooth = math.clamp(v, 0.01, 1) end)
 addOption("SPEED BYPASS", "SpdBypass", true, valBypassSpeed, function(v) valBypassSpeed = v end)
 addOption("UNLOCK CAM", "UnlockAll", false)
@@ -173,7 +173,6 @@ SaveBtn.MouseButton1Click:Connect(function()
     for _, obj in pairs(Movable_Objects) do data[obj.Name] = {X_S=obj.Position.X.Scale, X_O=obj.Position.X.Offset, Y_S=obj.Position.Y.Scale, Y_O=obj.Position.Y.Offset} end
     if writefile then writefile(ConfigName, game:GetService("HttpService"):JSONEncode(data)); SaveBtn.Text="SAVED!"; task.wait(1); SaveBtn.Text="SAVE CONFIG" end
 end)
--- Auto Load
 task.spawn(function()
     if isfile and isfile(ConfigName) then
         local data = game:GetService("HttpService"):JSONDecode(readfile(ConfigName))
@@ -181,14 +180,42 @@ task.spawn(function()
     end
 end)
 
--- [[ FUNCTIONS (EXACTLY V104) ]] --
+-- [[ NEW FUNCTION: RGB PENTAGRAM ]] --
 local function SpawnRipple()
     if not Player.Character or not Player.Character:FindFirstChild("HumanoidRootPart") then return end
     local root = Player.Character.HumanoidRootPart
+    
     local ray = workspace:Raycast(root.Position, Vector3.new(0, -10, 0), RaycastParams.new())
     local spawnPos = ray and ray.Position or (root.Position - Vector3.new(0, 2.8, 0))
-    local p = Instance.new("Part", workspace); p.Name="AngerRipple"; p.Anchored=true; p.CanCollide=false; p.Material=Enum.Material.Neon; p.Shape=Enum.PartType.Cylinder; p.Size=Vector3.new(0.1,1,1); p.CFrame=CFrame.new(spawnPos)*CFrame.Angles(0,0,math.rad(90)); p.Color=Color3.fromHSV(tick()%1,1,1)
-    TweenService:Create(p, TweenInfo.new(1), {Size=Vector3.new(0.1,valRipple,valRipple), Transparency=1}):Play(); Debris:AddItem(p, 1)
+    
+    local p = Instance.new("Part", workspace)
+    p.Name = "AngerMagicCircle"
+    p.Anchored = true
+    p.CanCollide = false
+    p.Transparency = 1 
+    p.Size = Vector3.new(1, 0.05, 1)
+    p.CFrame = CFrame.new(spawnPos)
+    
+    local sg = Instance.new("SurfaceGui", p)
+    sg.Face = Enum.NormalId.Top
+    sg.LightInfluence = 0 
+    sg.AlwaysOnTop = false 
+    
+    local img = Instance.new("ImageLabel", sg)
+    img.Size = UDim2.new(1, 0, 1, 0)
+    img.BackgroundTransparency = 1
+    img.ImageColor3 = Color3.new(1, 0, 0)
+    
+    local s, a = pcall(function() return getcustomasset("Anger_Pentagram_Circle1.png") end)
+    if s then img.Image = a else img.Image = "rbxassetid://0" end
+    
+    -- RGB SUPPORT
+    table.insert(RGB_Objects, {Type = "Image", Instance = img})
+    
+    TweenService:Create(p, TweenInfo.new(1.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = Vector3.new(valRipple, 0.05, valRipple)}):Play()
+    TweenService:Create(img, TweenInfo.new(1.5, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {ImageTransparency = 1}):Play()
+    
+    Debris:AddItem(p, 1.5)
 end
 
 local function GetClosestTarget()
@@ -210,7 +237,7 @@ Player.CharacterAdded:Connect(function(char)
     char:WaitForChild("Humanoid").Died:Connect(function() DeathScreen.Enabled = true end)
 end)
 
--- RENDER LOOP (V104)
+-- RENDER LOOP (MODIFIED FOR RGB IMAGE)
 local lastGhostTime = 0
 RunService.RenderStepped:Connect(function()
     local tickTime = tick()
@@ -218,7 +245,18 @@ RunService.RenderStepped:Connect(function()
     local fastRgb = Color3.fromHSV(tickTime % 1 / 1, 1, 1)
     
     DeathLabel.TextColor3 = fastRgb
-    for _, obj in pairs(RGB_Objects) do if obj.Type == "Stroke" then obj.Instance.Color = rgb elseif obj.Type == "Text" then obj.Instance.TextColor3 = rgb end end
+    
+    -- RGB LOOP
+    for i, obj in pairs(RGB_Objects) do 
+        if obj.Instance and obj.Instance.Parent then 
+            if obj.Type == "Stroke" then obj.Instance.Color = rgb 
+            elseif obj.Type == "Text" then obj.Instance.TextColor3 = rgb 
+            elseif obj.Type == "Image" then obj.Instance.ImageColor3 = rgb -- NEW
+            end 
+        else
+            table.remove(RGB_Objects, i) 
+        end 
+    end
 
     if PageInfo.Visible then
         InfoLabel.Text = string.format("SESSION:\nUser: %s\nID: %s\nFPS: %d\nPing: %d ms\nTime: %d s", Player.Name, SessionID, math.floor(workspace:GetRealPhysicsFPS()), math.floor(Stats.Network.ServerStatsItem["Data Ping"]:GetValue()), math.floor(tick()-StartTime))
@@ -292,28 +330,42 @@ UserInputService.JumpRequest:Connect(function()
 end)
 Player.Idled:Connect(function() if States.AntiAfk then VirtualUser:CaptureController(); VirtualUser:ClickButton2(Vector2.new()) end end)
 
--- [ LOGO (WIDE VERSION) WITH RGB STROKE ] --
+-- [ DOWNLOADERS ] --
 task.spawn(function()
-    local url = "https://raw.githubusercontent.com/AngerPC-DEV/AngerMOD/main/AngerMOD.png"
-    local fileName = "AngerMOD_Logo_V104.png"
+    -- Логотип
+    local urlLogo = "https://raw.githubusercontent.com/AngerPC-DEV/AngerMOD/main/AngerMOD.png"
+    local fileLogo = "AngerMOD_Logo_V104.png"
     
     if writefile and readfile and getcustomasset then
-        pcall(function() if not isfile(fileName) then writefile(fileName, game:HttpGet(url)) end end)
+        pcall(function() if not isfile(fileLogo) then writefile(fileLogo, game:HttpGet(urlLogo)) end end)
         
         local lg = Instance.new("ScreenGui", ScreenGui.Parent); lg.Name = "AngerWatermark"
         local im = Instance.new("ImageLabel", lg)
-        im.Size = UDim2.new(0, 200, 0, 100) -- WIDE
+        im.Size = UDim2.new(0, 200, 0, 100) 
         im.Position = UDim2.new(0, 10, 0, 10)
         im.BackgroundTransparency = 1
         im.BorderSizePixel = 0 
         
-        -- [[ RGB ОБВОДКА ]] --
         local stroke = Instance.new("UIStroke", im)
         stroke.Thickness = 3
         stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
         stroke.Color = Color3.new(1, 0, 0)
         table.insert(RGB_Objects, {Type = "Stroke", Instance = stroke})
 
-        local s, a = pcall(function() return getcustomasset(fileName) end); if s then im.Image = a else im.Image = url end
+        local s, a = pcall(function() return getcustomasset(fileLogo) end); if s then im.Image = a else im.Image = urlLogo end
+    end
+end)
+
+task.spawn(function()
+    -- Пентаграмма (Circle1)
+    local pentagramUrl = "https://raw.githubusercontent.com/AngerPC-DEV/AngerMOD/main/circle1.png"
+    local pentagramName = "Anger_Pentagram_Circle1.png"
+
+    if writefile and readfile and isfile then
+        pcall(function() 
+            if not isfile(pentagramName) then 
+                writefile(pentagramName, game:HttpGet(pentagramUrl)) 
+            end 
+        end)
     end
 end)
