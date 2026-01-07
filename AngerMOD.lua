@@ -1,4 +1,4 @@
--- [[ ⛧ AngerPC ⛧ V107 LEGACY REMASTER (MODDED VERSION) ]] --
+-- [[ ⛧ AngerPC ⛧ V108 THEME UPDATE ]] --
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -17,9 +17,24 @@ local Player = Players.LocalPlayer
 local SessionID = string.upper(game:GetService("HttpService"):GenerateGUID(false):sub(1, 8))
 local StartTime = tick()
 
+-- [[ THEME SYSTEM ]] --
+local Themes = {
+    "RGB", "БЕЛЫЙ", "СЕРЫЙ", "ГОЛУБОЙ", "ФИОЛЕТОВЫЙ", "НЕОБЫЧНЫЙ", "РОЗОВЫЙ", "КРАСНЫЙ"
+}
+local ThemeColors = {
+    ["БЕЛЫЙ"] = Color3.new(1, 1, 1),
+    ["СЕРЫЙ"] = Color3.fromRGB(120, 120, 120),
+    ["ГОЛУБОЙ"] = Color3.fromRGB(0, 190, 255),
+    ["ФИОЛЕТОВЫЙ"] = Color3.fromRGB(170, 0, 255),
+    ["НЕОБЫЧНЫЙ"] = Color3.fromRGB(255, 170, 0), -- Золотой / Янтарный
+    ["РОЗОВЫЙ"] = Color3.fromRGB(255, 105, 180),
+    ["КРАСНЫЙ"] = Color3.fromRGB(255, 0, 0)
+}
+local CurrentThemeIndex = 1 -- Старт с RGB
+
 -- [[ 1. GUI SETUP ]] --
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "AngerGUI_V107_MOD"
+ScreenGui.Name = "AngerGUI_V108"
 if game.CoreGui:FindFirstChild("RobloxGui") then
     ScreenGui.Parent = game.CoreGui 
 else
@@ -52,7 +67,7 @@ end
 
 -- // MAIN MENU // --
 local Main = Instance.new("Frame", ScreenGui)
-Main.Size = UDim2.new(0, 420, 0, 480) 
+Main.Size = UDim2.new(0, 420, 0, 500) 
 Main.Position = UDim2.new(0.1, 0, 0.2, 0)
 Main.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
 Main.Visible = false 
@@ -77,7 +92,7 @@ local btnTabInfo = MakeTab("INFO")
 local btnTabUI = MakeTab("UI EDIT")
 
 -- TITLE
-local Title = Instance.new("TextLabel", Main); Title.Size=UDim2.new(1,0,0,45); Title.BackgroundTransparency=1; Title.Text="AngerPC V107 MODDED"; Title.Font=Enum.Font.SciFi; Title.TextSize=24; Title.TextColor3=Color3.new(1,1,1); table.insert(RGB_Objects, {Type="Text", Instance=Title})
+local Title = Instance.new("TextLabel", Main); Title.Size=UDim2.new(1,0,0,45); Title.BackgroundTransparency=1; Title.Text="AngerPC V108 THEMES"; Title.Font=Enum.Font.SciFi; Title.TextSize=24; Title.TextColor3=Color3.new(1,1,1); table.insert(RGB_Objects, {Type="Text", Instance=Title})
 
 -- // PAGES // --
 local PageMain = Instance.new("ScrollingFrame", Main); PageMain.Size=UDim2.new(1,-20,0.78,0); PageMain.Position=UDim2.new(0,10,0.18,0); PageMain.BackgroundTransparency=1; PageMain.ScrollBarThickness=2; PageMain.Visible=true; Instance.new("UIListLayout", PageMain).Padding=UDim.new(0,8)
@@ -121,6 +136,22 @@ local function makeBind(name, callback)
     local hb = Instance.new("TextButton", ScreenGui); hb.Name="Bind_"..name; hb.Size=UDim2.new(0,50,0,50); hb.Position=UDim2.new(0.85,0,0.4,0); hb.BackgroundColor3=Color3.fromRGB(15,15,15); hb.Text=name:sub(1,3); hb.TextColor3=Color3.new(1,1,1); hb.Visible=false; hb.Draggable=true; style(hb,25); hb.MouseButton1Click:Connect(callback); table.insert(Movable_Objects, hb); return hb
 end
 
+-- BUTTON TO CHANGE THEME
+local btnTheme = Instance.new("TextButton", PageMain)
+btnTheme.Size = UDim2.new(1, 0, 0, 40)
+btnTheme.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+btnTheme.Text = "THEME: " .. Themes[CurrentThemeIndex]
+btnTheme.TextColor3 = Color3.new(1,1,1)
+btnTheme.Font = Enum.Font.SciFi
+btnTheme.TextSize = 16
+style(btnTheme)
+
+btnTheme.MouseButton1Click:Connect(function()
+    CurrentThemeIndex = CurrentThemeIndex + 1
+    if CurrentThemeIndex > #Themes then CurrentThemeIndex = 1 end
+    btnTheme.Text = "THEME: " .. Themes[CurrentThemeIndex]
+end)
+
 local function addOption(name, key, useInput, defaultInputVal, inputCallback)
     local f = Instance.new("Frame", PageMain); f.Size = UDim2.new(1, 0, 0, 40); f.BackgroundTransparency = 1
     local btnSize = useInput and 0.5 or 0.75
@@ -147,7 +178,7 @@ addOption("SUPER JUMP", "Jump", true, valJumpPower, function(v) valJumpPower = v
 addOption("JUMP RIPPLE", "Circle", true, valRipple, function(v) valRipple = v end)
 addOption("GHOST TRAIL", "Ghosts", true, valGhostRate, function(v) valGhostRate = math.clamp(v, 0.01, 2) end) 
 addOption("ESP HIGHLIGHT", "Esp", false)
-addOption("RGB SKIN", "RGB", false)
+addOption("SKIN COLOR", "RGB", false) -- Renamed to Skin Color
 addOption("FULLBRIGHT", "Fullbright", false) 
 addOption("INF JUMP", "InfJump", false)
 
@@ -167,7 +198,7 @@ UnlockBtn.MouseButton1Click:Connect(function()
     end
 end)
 
-local ConfigName = "AngerConfig_V107.json"
+local ConfigName = "AngerConfig_V108.json"
 SaveBtn.MouseButton1Click:Connect(function()
     local data = {}
     for _, obj in pairs(Movable_Objects) do data[obj.Name] = {X_S=obj.Position.X.Scale, X_O=obj.Position.X.Offset, Y_S=obj.Position.Y.Scale, Y_O=obj.Position.Y.Offset} end
@@ -180,7 +211,7 @@ task.spawn(function()
     end
 end)
 
--- [[ NEW FUNCTION: RGB PENTAGRAM ]] --
+-- [[ PENTAGRAM RIPPLE WITH THEME ]] --
 local function SpawnRipple()
     if not Player.Character or not Player.Character:FindFirstChild("HumanoidRootPart") then return end
     local root = Player.Character.HumanoidRootPart
@@ -204,12 +235,13 @@ local function SpawnRipple()
     local img = Instance.new("ImageLabel", sg)
     img.Size = UDim2.new(1, 0, 1, 0)
     img.BackgroundTransparency = 1
-    img.ImageColor3 = Color3.new(1, 0, 0)
+    -- Initial color will be updated by render loop immediately
+    img.ImageColor3 = Color3.new(1, 1, 1) 
     
     local s, a = pcall(function() return getcustomasset("Anger_Pentagram_Circle1.png") end)
     if s then img.Image = a else img.Image = "rbxassetid://0" end
     
-    -- RGB SUPPORT
+    -- Add to RGB/Theme Object List
     table.insert(RGB_Objects, {Type = "Image", Instance = img})
     
     TweenService:Create(p, TweenInfo.new(1.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = Vector3.new(valRipple, 0.05, valRipple)}):Play()
@@ -237,21 +269,37 @@ Player.CharacterAdded:Connect(function(char)
     char:WaitForChild("Humanoid").Died:Connect(function() DeathScreen.Enabled = true end)
 end)
 
--- RENDER LOOP (MODIFIED FOR RGB IMAGE)
+-- [[ RENDER LOOP WITH THEMES ]] --
 local lastGhostTime = 0
 RunService.RenderStepped:Connect(function()
     local tickTime = tick()
-    local rgb = Color3.fromHSV(tickTime % 3 / 3, 1, 1)
-    local fastRgb = Color3.fromHSV(tickTime % 1 / 1, 1, 1)
     
-    DeathLabel.TextColor3 = fastRgb
+    -- CALCULATE ACTIVE COLOR BASED ON THEME
+    local currentThemeName = Themes[CurrentThemeIndex]
+    local activeColor = Color3.new(1,1,1)
     
-    -- RGB LOOP
+    if currentThemeName == "RGB" then
+        activeColor = Color3.fromHSV(tickTime % 3 / 3, 1, 1)
+    else
+        -- Check if it is in the static table
+        if ThemeColors[currentThemeName] then
+            activeColor = ThemeColors[currentThemeName]
+        else
+            -- Fallback
+            activeColor = Color3.new(1,1,1)
+        end
+    end
+    
+    local fastRgb = Color3.fromHSV(tickTime % 1 / 1, 1, 1) -- Keep generic RGB for rainbow mode speed
+    
+    DeathLabel.TextColor3 = activeColor
+    
+    -- APPLY THEME TO ALL OBJECTS
     for i, obj in pairs(RGB_Objects) do 
         if obj.Instance and obj.Instance.Parent then 
-            if obj.Type == "Stroke" then obj.Instance.Color = rgb 
-            elseif obj.Type == "Text" then obj.Instance.TextColor3 = rgb 
-            elseif obj.Type == "Image" then obj.Instance.ImageColor3 = rgb -- NEW
+            if obj.Type == "Stroke" then obj.Instance.Color = activeColor 
+            elseif obj.Type == "Text" then obj.Instance.TextColor3 = activeColor 
+            elseif obj.Type == "Image" then obj.Instance.ImageColor3 = activeColor
             end 
         else
             table.remove(RGB_Objects, i) 
@@ -281,14 +329,24 @@ RunService.RenderStepped:Connect(function()
     if States.Esp then
         for _, v in pairs(game.Players:GetPlayers()) do
             if v ~= Player and v.Character then
-                local hl = v.Character:FindFirstChild("AngerESP") or Instance.new("Highlight", v.Character); hl.Name="AngerESP"; hl.FillTransparency=0.5; hl.OutlineTransparency=0; hl.FillColor=fastRgb; hl.OutlineColor=Color3.new(1,1,1)
+                local hl = v.Character:FindFirstChild("AngerESP") or Instance.new("Highlight", v.Character); hl.Name="AngerESP"; hl.FillTransparency=0.5; hl.OutlineTransparency=0; hl.FillColor=activeColor; hl.OutlineColor=Color3.new(1,1,1)
             end
         end
     else
         for _, v in pairs(game.Players:GetPlayers()) do if v.Character and v.Character:FindFirstChild("AngerESP") then v.Character.AngerESP:Destroy() end end
     end
 
-    if States.RGB then for _,v in pairs(char:GetDescendants()) do if v:IsA("BasePart") or v:IsA("MeshPart") then v.Color=fastRgb; v.Material=Enum.Material.Neon; if v:IsA("MeshPart") then v.TextureID="" end; if v:IsA("Decal") then v:Destroy() end end end end
+   -- APPLY THEME TO SKIN IF ENABLED
+    if States.RGB then 
+        for _,v in pairs(char:GetDescendants()) do 
+            if v:IsA("BasePart") or v:IsA("MeshPart") then 
+                v.Color=activeColor; v.Material=Enum.Material.Neon; 
+                if v:IsA("MeshPart") then v.TextureID="" end; 
+                if v:IsA("Decal") then v:Destroy() end 
+            end 
+        end 
+    end
+    
     if States.Fullbright then Lighting.Brightness=2; Lighting.ClockTime=14; Lighting.FogEnd=100000; Lighting.GlobalShadows=false end
 
     if States.Fly and root and hum then
@@ -311,7 +369,7 @@ RunService.RenderStepped:Connect(function()
     end
 
     if States.Ghosts and tick() - lastGhostTime > valGhostRate then 
-        lastGhostTime = tick(); for _, v in pairs(char:GetChildren()) do if v:IsA("BasePart") and v.Transparency < 1 then local g = v:Clone(); g.Parent = workspace; g.Anchored = true; g.CanCollide = false; g.CFrame = v.CFrame; g.Color = rgb; g.Material = Enum.Material.Neon; g:ClearAllChildren(); TweenService:Create(g, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Transparency=1, CFrame=g.CFrame*CFrame.Angles(math.rad(math.random(-180,180)),math.rad(math.random(-180,180)),0), Size=g.Size*1.1}):Play(); Debris:AddItem(g, 0.5) end end
+        lastGhostTime = tick(); for _, v in pairs(char:GetChildren()) do if v:IsA("BasePart") and v.Transparency < 1 then local g = v:Clone(); g.Parent = workspace; g.Anchored = true; g.CanCollide = false; g.CFrame = v.CFrame; g.Color = activeColor; g.Material = Enum.Material.Neon; g:ClearAllChildren(); TweenService:Create(g, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Transparency=1, CFrame=g.CFrame*CFrame.Angles(math.rad(math.random(-180,180)),math.rad(math.random(-180,180)),0), Size=g.Size*1.1}):Play(); Debris:AddItem(g, 0.5) end end
     end
     
     if States.Spd and hum.MoveDirection.Magnitude > 0 then root.CFrame += (hum.MoveDirection * (0.5 * valSpeed)) end
@@ -319,7 +377,7 @@ RunService.RenderStepped:Connect(function()
 
     for _, v in pairs(game.Players:GetPlayers()) do
         if v ~= Player and v.Character and v.Character:FindFirstChild("Head") then
-            local head = v.Character.Head; head.Size = States.Hitbox and Vector3.new(valHitbox, valHitbox, valHitbox) or Vector3.new(1,1,1); head.Transparency = States.Hitbox and 0.7 or 0; head.CanCollide = false; if States.Hitbox then head.Color = rgb; head.Material = Enum.Material.Neon end
+            local head = v.Character.Head; head.Size = States.Hitbox and Vector3.new(valHitbox, valHitbox, valHitbox) or Vector3.new(1,1,1); head.Transparency = States.Hitbox and 0.7 or 0; head.CanCollide = false; if States.Hitbox then head.Color = activeColor; head.Material = Enum.Material.Neon end
         end
     end
 end)
