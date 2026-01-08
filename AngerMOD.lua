@@ -1,4 +1,4 @@
--- [[ ⛧ AngerPC ⛧ V119 MEMORY UPDATE ]] --
+-- [[ ⛧ AngerPC ⛧ V119 DELTA FIX ]] --
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -15,15 +15,18 @@ local HttpService = game:GetService("HttpService")
 local PathfindingService = game:GetService("PathfindingService")
 local Player = Players.LocalPlayer
 
+-- [[ DELTA COMPATIBILITY ]] --
+local request = (syn and syn.request) or (http and http.request) or http_request or (fluxus and fluxus.request) or request
+local getcustomasset = getcustomasset or getsynasset
+
 -- [[ SESSION INFO ]] --
 local SessionID = string.upper(HttpService:GenerateGUID(false):sub(1, 8))
-local StartTime = tick()
 
 -- [[ MEMORY SYSTEM ]] --
 local ChatHistory = {
     {
         role = "system",
-        content = "Ты — AngerPC, крутой ИИ-бот в Roblox. Твой создатель — AngerPC-DEV. Твой характер: дерзкий, веселый, используешь сленг (пон, имба, кринж, рил). Ты помнишь всё, что тебе говорят. Если тебя просят помочь — помогай. Если оскорбляют — отвечай смешно. Отвечай кратко (макс 2 предложения)."
+        content = "Ты — AngerPC, крутой ИИ-бот в Roblox. Твой создатель — AngerPC-DEV. Твой характер: дерзкий, веселый, используешь сленг. Отвечай кратко."
     }
 }
 
@@ -39,11 +42,16 @@ local CurrentThemeIndex = 1
 
 -- [[ 1. GUI SETUP ]] --
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "AngerGUI_V119"
-if game.CoreGui:FindFirstChild("RobloxGui") then ScreenGui.Parent = game.CoreGui else ScreenGui.Parent = Player:WaitForChild("PlayerGui") end
+ScreenGui.Name = "AngerGUI_V119_Fixed"
+-- Delta Fix: CoreGui может быть недоступен, используем PlayerGui как приоритет
+if Player:FindFirstChild("PlayerGui") then
+    ScreenGui.Parent = Player.PlayerGui
+else
+    ScreenGui.Parent = game:GetService("CoreGui")
+end
 
 -- DEATH SCREEN
-local DeathScreen = Instance.new("ScreenGui", Player:WaitForChild("PlayerGui"))
+local DeathScreen = Instance.new("ScreenGui", ScreenGui.Parent)
 DeathScreen.Name = "AngerDeath"; DeathScreen.Enabled = false
 local DeathLabel = Instance.new("TextLabel", DeathScreen); DeathLabel.Size = UDim2.new(1, 0, 1, 0); DeathLabel.BackgroundTransparency = 1; DeathLabel.Text = "HAHA DIED"; DeathLabel.Font = Enum.Font.Creepster; DeathLabel.TextSize = 100; DeathLabel.TextColor3 = Color3.fromRGB(255, 0, 0); DeathLabel.TextStrokeTransparency = 0
 
@@ -60,7 +68,7 @@ local function style(obj, radius, thickness)
 end
 
 -- // MAIN MENU // --
-local Main = Instance.new("Frame", ScreenGui); Main.Size = UDim2.new(0, 480, 0, 550); Main.Position = UDim2.new(0.1, 0, 0.2, 0); Main.BackgroundColor3 = Color3.fromRGB(10, 10, 10); Main.Visible = false; Main.Active = true; Main.Draggable = true; style(Main, 8, 2); table.insert(Movable_Objects, Main)
+local Main = Instance.new("Frame", ScreenGui); Main.Size = UDim2.new(0, 480, 0, 550); Main.Position = UDim2.new(0.1, 0, 0.2, 0); Main.BackgroundColor3 = Color3.fromRGB(10, 10, 10); Main.Visible = true; Main.Active = true; Main.Draggable = true; style(Main, 8, 2); table.insert(Movable_Objects, Main)
 
 -- TABS
 local TabFrame = Instance.new("Frame", Main); TabFrame.Size = UDim2.new(1, -20, 0, 30); TabFrame.Position = UDim2.new(0, 10, 0, 50); TabFrame.BackgroundTransparency = 1
@@ -73,7 +81,7 @@ end
 local btnTabMain = MakeTab("MAIN"); local btnTabInfo = MakeTab("INFO"); local btnTabAI = MakeTab("AI"); local btnTabWorld = MakeTab("WORLD"); local btnTabUI = MakeTab("UI")
 
 -- TITLE
-local Title = Instance.new("TextLabel", Main); Title.Size=UDim2.new(1,0,0,45); Title.BackgroundTransparency=1; Title.Text="AngerPC V119 MEMORY"; Title.Font=Enum.Font.SciFi; Title.TextSize=24; Title.TextColor3=Color3.new(1,1,1); table.insert(RGB_Objects, {Type="Text", Instance=Title})
+local Title = Instance.new("TextLabel", Main); Title.Size=UDim2.new(1,0,0,45); Title.BackgroundTransparency=1; Title.Text="AngerPC V119 DELTA"; Title.Font=Enum.Font.SciFi; Title.TextSize=24; Title.TextColor3=Color3.new(1,1,1); table.insert(RGB_Objects, {Type="Text", Instance=Title})
 
 -- // PAGES // --
 local PageMain = Instance.new("ScrollingFrame", Main); PageMain.Size=UDim2.new(1,-20,0.78,0); PageMain.Position=UDim2.new(0,10,0.18,0); PageMain.BackgroundTransparency=1; PageMain.ScrollBarThickness=2; PageMain.Visible=true; Instance.new("UIListLayout", PageMain).Padding=UDim.new(0,8)
@@ -87,6 +95,15 @@ btnTabInfo.MouseButton1Click:Connect(function() PageMain.Visible=false; PageInfo
 btnTabAI.MouseButton1Click:Connect(function() PageMain.Visible=false; PageInfo.Visible=false; PageAI.Visible=true; PageWorld.Visible=false; PageUI.Visible=false end)
 btnTabWorld.MouseButton1Click:Connect(function() PageMain.Visible=false; PageInfo.Visible=false; PageAI.Visible=false; PageWorld.Visible=true; PageUI.Visible=false end)
 btnTabUI.MouseButton1Click:Connect(function() PageMain.Visible=false; PageInfo.Visible=false; PageAI.Visible=false; PageWorld.Visible=false; PageUI.Visible=true end)
+
+-- INFO PAGE CONTENT (FIXED)
+local InfoLabel = Instance.new("TextLabel", PageInfo)
+InfoLabel.Size = UDim2.new(1,0,1,0)
+InfoLabel.BackgroundTransparency = 1
+InfoLabel.TextColor3 = Color3.new(1,1,1)
+InfoLabel.TextSize = 18
+InfoLabel.TextYAlignment = Enum.TextYAlignment.Top
+InfoLabel.Text = "Loading stats..."
 
 -- // WORLD PAGE SETUP // --
 local FogBtn = Instance.new("TextButton", PageWorld); FogBtn.Size = UDim2.new(1, 0, 0, 40); FogBtn.Position=UDim2.new(0,0,0,0); FogBtn.Text = "REMOVE FOG: OFF"; FogBtn.BackgroundColor3 = Color3.fromRGB(30, 10, 10); FogBtn.TextColor3 = Color3.new(1, 1, 1); style(FogBtn)
@@ -103,6 +120,51 @@ local RecBtn = Instance.new("TextButton", PageAI); RecBtn.Size = UDim2.new(0.48,
 local PlayBtn = Instance.new("TextButton", PageAI); PlayBtn.Size = UDim2.new(0.48, 0, 0, 40); PlayBtn.Position = UDim2.new(0.52, 0, 0.4, 0); PlayBtn.Text = "PLAY"; PlayBtn.BackgroundColor3 = Color3.fromRGB(10, 40, 10); PlayBtn.TextColor3 = Color3.new(1, 1, 1); style(PlayBtn)
 local LoopBtn = Instance.new("TextButton", PageAI); LoopBtn.Size = UDim2.new(1, 0, 0, 40); LoopBtn.Position = UDim2.new(0, 0, 0.5, 0); LoopBtn.Text = "LOOP PLAYBACK: OFF"; LoopBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30); LoopBtn.TextColor3 = Color3.new(1, 1, 1); style(LoopBtn)
 local AIStatus = Instance.new("TextLabel", PageAI); AIStatus.Size = UDim2.new(1, 0, 0, 30); AIStatus.Position = UDim2.new(0, 0, 0.62, 0); AIStatus.BackgroundTransparency = 1; AIStatus.Text = "STATUS: IDLE"; AIStatus.TextColor3 = Color3.fromRGB(150, 150, 150); style(AIStatus, 0, 0)
+
+-- // UI PAGE SETUP (FIXED BUTTONS) // --
+local UnlockBtn = Instance.new("TextButton", PageUI)
+UnlockBtn.Size = UDim2.new(1, 0, 0, 40)
+UnlockBtn.Position = UDim2.new(0,0,0,0)
+UnlockBtn.Text = "UNLOCK MOVING: OFF"
+UnlockBtn.BackgroundColor3 = Color3.fromRGB(30,10,10)
+UnlockBtn.TextColor3 = Color3.new(1,1,1)
+style(UnlockBtn)
+
+local SaveBtn = Instance.new("TextButton", PageUI)
+SaveBtn.Size = UDim2.new(1, 0, 0, 40)
+SaveBtn.Position = UDim2.new(0,0,0.12,0)
+SaveBtn.Text = "SAVE CONFIG"
+SaveBtn.BackgroundColor3 = Color3.fromRGB(20,20,40)
+SaveBtn.TextColor3 = Color3.new(1,1,1)
+style(SaveBtn)
+
+-- FIX: Added missing fly buttons
+local btnUp = Instance.new("TextButton", PageWorld)
+btnUp.Size = UDim2.new(0.45, 0, 0, 40)
+btnUp.Position = UDim2.new(0, 0, 0.6, 0)
+btnUp.Text = "FLY UP"
+btnUp.BackgroundColor3 = Color3.fromRGB(20,20,20)
+btnUp.TextColor3 = Color3.new(1,1,1)
+style(btnUp)
+
+local btnDn = Instance.new("TextButton", PageWorld)
+btnDn.Size = UDim2.new(0.45, 0, 0, 40)
+btnDn.Position = UDim2.new(0.5, 0, 0.6, 0)
+btnDn.Text = "FLY DOWN"
+btnDn.BackgroundColor3 = Color3.fromRGB(20,20,20)
+btnDn.TextColor3 = Color3.new(1,1,1)
+style(btnDn)
+
+local SideBtn = Instance.new("TextButton", ScreenGui)
+SideBtn.Name = "ToggleMenu"
+SideBtn.Size = UDim2.new(0, 50, 0, 50)
+SideBtn.Position = UDim2.new(0, 10, 0.5, 0)
+SideBtn.Text = "O/C"
+SideBtn.BackgroundColor3 = Color3.fromRGB(20,20,20)
+SideBtn.TextColor3 = Color3.new(1,1,1)
+style(SideBtn, 16)
+table.insert(Movable_Objects, SideBtn)
+
 
 -- [[ 2. LOGIC ]] --
 local States = { AI = false, Watermark = true, FriendBot = false, IsFollowing = true, IsRecording = false, IsPlaying = false, LoopPlay = false, AmbientSync = false, NoFog = false } 
@@ -122,7 +184,7 @@ end
 
 local function SendChat(msg)
     if game:GetService("TextChatService").ChatVersion == Enum.ChatVersion.TextChatService then
-        game:GetService("TextChatService").TextChannels.RBXGeneral:SendAsync(msg)
+        pcall(function() game:GetService("TextChatService").TextChannels.RBXGeneral:SendAsync(msg) end)
     else
         game:GetService("ReplicatedStorage").DefaultChatSystemChatEvents.SayMessageRequest:FireServer(msg, "All")
     end
@@ -143,8 +205,8 @@ local function addOption(name, key, useInput, defaultInputVal, inputCallback)
     local btnSize = useInput and 0.5 or 0.75
     local b = Instance.new("TextButton", f); b.Size = UDim2.new(btnSize, -5, 1, 0); b.Text = name; b.BackgroundColor3 = Color3.fromRGB(20, 20, 20); b.TextColor3 = Color3.new(1,1,1); style(b)
     if States[key] then b.BackgroundColor3 = Color3.fromRGB(40, 40, 40) end
-    local hk = makeBind(name, function() States[key] = not States[key]; if key == "Fly" then FlyGui.Visible = States.Fly end end)
-    b.MouseButton1Click:Connect(function() States[key] = not States[key]; b.BackgroundColor3 = States[key] and Color3.fromRGB(40, 40, 40) or Color3.fromRGB(20, 20, 20); if key == "Fly" then FlyGui.Visible = States.Fly end end)
+    local hk = makeBind(name, function() States[key] = not States[key]; if key == "Fly" then end end)
+    b.MouseButton1Click:Connect(function() States[key] = not States[key]; b.BackgroundColor3 = States[key] and Color3.fromRGB(40, 40, 40) or Color3.fromRGB(20, 20, 20); if key == "Fly" then end end)
     local bb = Instance.new("TextButton", f); bb.Size = UDim2.new(0.25, 0, 1, 0); bb.Position = UDim2.new(0.75, 0, 0, 0); bb.Text = "BIND"; style(bb)
     bb.MouseButton1Click:Connect(function() hk.Visible = not hk.Visible end)
     if useInput then
@@ -171,8 +233,7 @@ addOption("SKIN COLOR", "RGB", false)
 addOption("FULLBRIGHT", "Fullbright", false) 
 addOption("INF JUMP", "InfJump", false)
 
--- LOGIN
-LB.MouseButton1Click:Connect(function() if LI.Text == "AngerPC" then LFrame:Destroy(); Main.Visible = true; SideBtn.Visible = true else LI.Text = "WRONG KEY"; task.wait(1); LI.Text = "" end end)
+-- FIXED: Login Removed, simple toggle
 SideBtn.MouseButton1Click:Connect(function() Main.Visible = not Main.Visible end)
 
 -- [[ UI EDITOR & SAVE ]] --
@@ -275,15 +336,17 @@ local function ProcessAI(msg, senderName)
     if #ChatHistory > 12 then table.remove(ChatHistory, 2) end
 
     local success, response = pcall(function()
-        return request({ 
-            Url = "https://api.openai.com/v1/chat/completions", 
-            Method = "POST", 
-            Headers = {["Content-Type"] = "application/json", ["Authorization"] = "Bearer " .. apiKey},
-            Body = HttpService:JSONEncode({ model = "gpt-4o-mini", messages = ChatHistory, max_tokens = 60 }) 
-        })
+        if request then
+            return request({ 
+                Url = "https://api.openai.com/v1/chat/completions", 
+                Method = "POST", 
+                Headers = {["Content-Type"] = "application/json", ["Authorization"] = "Bearer " .. apiKey},
+                Body = HttpService:JSONEncode({ model = "gpt-4o-mini", messages = ChatHistory, max_tokens = 60 }) 
+            })
+        end
     end)
 
-    if success and response.Body then 
+    if success and response and response.Body then 
         local data = HttpService:JSONDecode(response.Body)
         if data.choices and data.choices[1] then 
             local reply = data.choices[1].message.content
@@ -304,7 +367,10 @@ local function SpawnRipple()
     local root = Player.Character.HumanoidRootPart; local ray = workspace:Raycast(root.Position, Vector3.new(0, -10, 0), RaycastParams.new())
     local spawnPos = ray and ray.Position or (root.Position - Vector3.new(0, 2.8, 0)); local p = Instance.new("Part", workspace); p.Name = "AngerRipple"; p.Anchored = true; p.CanCollide = false
     if States.UsePentagram then
-        p.Transparency = 1; p.Size = Vector3.new(1, 0.05, 1); p.CFrame = CFrame.new(spawnPos); local sg = Instance.new("SurfaceGui", p); sg.Face = Enum.NormalId.Top; sg.LightInfluence = 0; sg.AlwaysOnTop = false; local img = Instance.new("ImageLabel", sg); img.Size = UDim2.new(1, 0, 1, 0); img.BackgroundTransparency = 1; img.ImageColor3 = Color3.new(1, 1, 1); local s, a = pcall(function() return getcustomasset("Anger_Pentagram_Circle1.png") end); if s then img.Image = a else img.Image = "rbxassetid://0" end; table.insert(RGB_Objects, {Type = "Image", Instance = img}); TweenService:Create(p, TweenInfo.new(1.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = Vector3.new(valRipple, 0.05, valRipple)}):Play(); TweenService:Create(img, TweenInfo.new(1.5, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {ImageTransparency = 1}):Play(); Debris:AddItem(p, 1.5)
+        p.Transparency = 1; p.Size = Vector3.new(1, 0.05, 1); p.CFrame = CFrame.new(spawnPos); local sg = Instance.new("SurfaceGui", p); sg.Face = Enum.NormalId.Top; sg.LightInfluence = 0; sg.AlwaysOnTop = false; local img = Instance.new("ImageLabel", sg); img.Size = UDim2.new(1, 0, 1, 0); img.BackgroundTransparency = 1; img.ImageColor3 = Color3.new(1, 1, 1); 
+        local s, a = pcall(function() return getcustomasset("Anger_Pentagram_Circle1.png") end)
+        if s then img.Image = a else img.Image = "rbxassetid://0" end; 
+        table.insert(RGB_Objects, {Type = "Image", Instance = img}); TweenService:Create(p, TweenInfo.new(1.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = Vector3.new(valRipple, 0.05, valRipple)}):Play(); TweenService:Create(img, TweenInfo.new(1.5, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {ImageTransparency = 1}):Play(); Debris:AddItem(p, 1.5)
     else
         p.Shape = Enum.PartType.Cylinder; p.Material = Enum.Material.Neon; p.Size = Vector3.new(0.1, 1, 1); p.CFrame = CFrame.new(spawnPos) * CFrame.Angles(0, 0, math.rad(90)); p.Color = Color3.new(1,1,1); table.insert(RGB_Objects, {Type = "Part", Instance = p}); TweenService:Create(p, TweenInfo.new(1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = Vector3.new(0.1, valRipple, valRipple), Transparency = 1}):Play(); Debris:AddItem(p, 1)
     end
@@ -384,11 +450,38 @@ end)
 UserInputService.JumpRequest:Connect(function() if States.InfJump and Player.Character and Player.Character:FindFirstChild("Humanoid") then Player.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping) end; if States.Circle then SpawnRipple() end end)
 Player.Idled:Connect(function() if States.AntiAfk then VirtualUser:CaptureController(); VirtualUser:ClickButton2(Vector2.new()) end end)
 
+-- ASSET LOADING (FIXED FOR DELTA)
 task.spawn(function()
-    local urlLogo = "https://raw.githubusercontent.com/AngerPC-DEV/AngerMOD/main/AngerMOD.png"; local fileLogo = "AngerMOD_Logo_V104.png"
-    if writefile and readfile and getcustomasset then pcall(function() if not isfile(fileLogo) then writefile(fileLogo, game:HttpGet(urlLogo)) end end); local lg = Instance.new("ScreenGui", ScreenGui.Parent); lg.Name = "AngerWatermark"; local im = Instance.new("ImageLabel", lg); im.Size = UDim2.new(0, 200, 0, 100); im.Position = UDim2.new(0, 10, 0, 10); im.BackgroundTransparency = 1; im.BorderSizePixel = 0; local stroke = Instance.new("UIStroke", im); stroke.Thickness = 3; stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border; stroke.Color = Color3.new(1, 0, 0); table.insert(RGB_Objects, {Type = "Stroke", Instance = stroke}); local s, a = pcall(function() return getcustomasset(fileLogo) end); if s then im.Image = a else im.Image = urlLogo end end
+    local urlLogo = "https://raw.githubusercontent.com/AngerPC-DEV/AngerMOD/main/AngerMOD.png"
+    local fileLogo = "AngerMOD_Logo_V104.png"
+    
+    if writefile and readfile then
+         pcall(function() 
+             if not isfile(fileLogo) then writefile(fileLogo, game:HttpGet(urlLogo)) end 
+         end)
+    end
+    
+    local lg = Instance.new("ScreenGui", ScreenGui.Parent)
+    lg.Name = "AngerWatermark"
+    local im = Instance.new("ImageLabel", lg)
+    im.Size = UDim2.new(0, 200, 0, 100)
+    im.Position = UDim2.new(0, 10, 0, 10)
+    im.BackgroundTransparency = 1
+    im.BorderSizePixel = 0
+    local stroke = Instance.new("UIStroke", im)
+    stroke.Thickness = 3
+    stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    stroke.Color = Color3.new(1, 0, 0)
+    table.insert(RGB_Objects, {Type = "Stroke", Instance = stroke})
+    
+    local s, a = pcall(function() return getcustomasset(fileLogo) end)
+    if s then im.Image = a else im.Image = urlLogo end
 end)
+
 task.spawn(function()
-    local pentagramUrl = "https://raw.githubusercontent.com/AngerPC-DEV/AngerMOD/main/circle1.png"; local pentagramName = "Anger_Pentagram_Circle1.png"
-    if writefile and readfile and isfile then pcall(function() if not isfile(pentagramName) then writefile(pentagramName, game:HttpGet(pentagramUrl)) end end) end
-end))
+    local pentagramUrl = "https://raw.githubusercontent.com/AngerPC-DEV/AngerMOD/main/circle1.png"
+    local pentagramName = "Anger_Pentagram_Circle1.png"
+    if writefile and readfile and isfile then 
+        pcall(function() if not isfile(pentagramName) then writefile(pentagramName, game:HttpGet(pentagramUrl)) end end) 
+    end
+end)
