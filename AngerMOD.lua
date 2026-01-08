@@ -1,4 +1,4 @@
--- [[ ⛧ AngerPC ⛧ V117 WORLD UPDATE ]] --
+-- [[ ⛧ AngerPC ⛧ V119 MEMORY UPDATE ]] --
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -19,6 +19,14 @@ local Player = Players.LocalPlayer
 local SessionID = string.upper(HttpService:GenerateGUID(false):sub(1, 8))
 local StartTime = tick()
 
+-- [[ MEMORY SYSTEM ]] --
+local ChatHistory = {
+    {
+        role = "system",
+        content = "Ты — AngerPC, крутой ИИ-бот в Roblox. Твой создатель — AngerPC-DEV. Твой характер: дерзкий, веселый, используешь сленг (пон, имба, кринж, рил). Ты помнишь всё, что тебе говорят. Если тебя просят помочь — помогай. Если оскорбляют — отвечай смешно. Отвечай кратко (макс 2 предложения)."
+    }
+}
+
 -- [[ THEME SYSTEM ]] --
 local Themes = { "RGB", "БЕЛЫЙ", "СЕРЫЙ", "ГОЛУБОЙ", "ФИОЛЕТОВЫЙ", "НЕОБЫЧНЫЙ", "РОЗОВЫЙ", "КРАСНЫЙ" }
 local ThemeColors = {
@@ -31,7 +39,7 @@ local CurrentThemeIndex = 1
 
 -- [[ 1. GUI SETUP ]] --
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "AngerGUI_V117"
+ScreenGui.Name = "AngerGUI_V119"
 if game.CoreGui:FindFirstChild("RobloxGui") then ScreenGui.Parent = game.CoreGui else ScreenGui.Parent = Player:WaitForChild("PlayerGui") end
 
 -- DEATH SCREEN
@@ -54,7 +62,7 @@ end
 -- // MAIN MENU // --
 local Main = Instance.new("Frame", ScreenGui); Main.Size = UDim2.new(0, 480, 0, 550); Main.Position = UDim2.new(0.1, 0, 0.2, 0); Main.BackgroundColor3 = Color3.fromRGB(10, 10, 10); Main.Visible = false; Main.Active = true; Main.Draggable = true; style(Main, 8, 2); table.insert(Movable_Objects, Main)
 
--- TABS (UPDATED SIZE FOR 5 TABS)
+-- TABS
 local TabFrame = Instance.new("Frame", Main); TabFrame.Size = UDim2.new(1, -20, 0, 30); TabFrame.Position = UDim2.new(0, 10, 0, 50); TabFrame.BackgroundTransparency = 1
 local layoutTabs = Instance.new("UIListLayout", TabFrame); layoutTabs.FillDirection=Enum.FillDirection.Horizontal; layoutTabs.Padding=UDim.new(0,5)
 
@@ -65,7 +73,7 @@ end
 local btnTabMain = MakeTab("MAIN"); local btnTabInfo = MakeTab("INFO"); local btnTabAI = MakeTab("AI"); local btnTabWorld = MakeTab("WORLD"); local btnTabUI = MakeTab("UI")
 
 -- TITLE
-local Title = Instance.new("TextLabel", Main); Title.Size=UDim2.new(1,0,0,45); Title.BackgroundTransparency=1; Title.Text="AngerPC V117 WORLD"; Title.Font=Enum.Font.SciFi; Title.TextSize=24; Title.TextColor3=Color3.new(1,1,1); table.insert(RGB_Objects, {Type="Text", Instance=Title})
+local Title = Instance.new("TextLabel", Main); Title.Size=UDim2.new(1,0,0,45); Title.BackgroundTransparency=1; Title.Text="AngerPC V119 MEMORY"; Title.Font=Enum.Font.SciFi; Title.TextSize=24; Title.TextColor3=Color3.new(1,1,1); table.insert(RGB_Objects, {Type="Text", Instance=Title})
 
 -- // PAGES // --
 local PageMain = Instance.new("ScrollingFrame", Main); PageMain.Size=UDim2.new(1,-20,0.78,0); PageMain.Position=UDim2.new(0,10,0.18,0); PageMain.BackgroundTransparency=1; PageMain.ScrollBarThickness=2; PageMain.Visible=true; Instance.new("UIListLayout", PageMain).Padding=UDim.new(0,8)
@@ -81,43 +89,20 @@ btnTabWorld.MouseButton1Click:Connect(function() PageMain.Visible=false; PageInf
 btnTabUI.MouseButton1Click:Connect(function() PageMain.Visible=false; PageInfo.Visible=false; PageAI.Visible=false; PageWorld.Visible=false; PageUI.Visible=true end)
 
 -- // WORLD PAGE SETUP // --
-local WorldLayout = Instance.new("UIListLayout", PageWorld); WorldLayout.Padding = UDim.new(0, 10)
-
-local FogBtn = Instance.new("TextButton", PageWorld); FogBtn.Size = UDim2.new(1, 0, 0, 40); FogBtn.Text = "REMOVE FOG: OFF"; FogBtn.BackgroundColor3 = Color3.fromRGB(30, 10, 10); FogBtn.TextColor3 = Color3.new(1, 1, 1); style(FogBtn)
-local AmbientBtn = Instance.new("TextButton", PageWorld); AmbientBtn.Size = UDim2.new(1, 0, 0, 40); AmbientBtn.Text = "AMBIENT SYNC (THEME): OFF"; AmbientBtn.BackgroundColor3 = Color3.fromRGB(30, 10, 10); AmbientBtn.TextColor3 = Color3.new(1, 1, 1); style(AmbientBtn)
-
-local SkyBox = Instance.new("TextBox", PageWorld); SkyBox.Size = UDim2.new(1, 0, 0, 40); SkyBox.PlaceholderText = "CUSTOM SKY ID (Numbers)"; SkyBox.Text = ""; SkyBox.BackgroundColor3 = Color3.fromRGB(20, 20, 20); SkyBox.TextColor3 = Color3.new(1, 1, 1); style(SkyBox)
-local SetSkyBtn = Instance.new("TextButton", PageWorld); SetSkyBtn.Size = UDim2.new(1, 0, 0, 40); SetSkyBtn.Text = "APPLY CUSTOM SKY"; SetSkyBtn.BackgroundColor3 = Color3.fromRGB(20, 20, 20); SetSkyBtn.TextColor3 = Color3.new(1, 1, 1); style(SetSkyBtn)
-local SpaceSkyBtn = Instance.new("TextButton", PageWorld); SpaceSkyBtn.Size = UDim2.new(1, 0, 0, 40); SpaceSkyBtn.Text = "SET SPACE SKY (DEFAULT)"; SpaceSkyBtn.BackgroundColor3 = Color3.fromRGB(20, 20, 40); SpaceSkyBtn.TextColor3 = Color3.new(1, 1, 1); style(SpaceSkyBtn)
+local FogBtn = Instance.new("TextButton", PageWorld); FogBtn.Size = UDim2.new(1, 0, 0, 40); FogBtn.Position=UDim2.new(0,0,0,0); FogBtn.Text = "REMOVE FOG: OFF"; FogBtn.BackgroundColor3 = Color3.fromRGB(30, 10, 10); FogBtn.TextColor3 = Color3.new(1, 1, 1); style(FogBtn)
+local AmbientBtn = Instance.new("TextButton", PageWorld); AmbientBtn.Size = UDim2.new(1, 0, 0, 40); AmbientBtn.Position=UDim2.new(0,0,0.1,0); AmbientBtn.Text = "AMBIENT SYNC: OFF"; AmbientBtn.BackgroundColor3 = Color3.fromRGB(30, 10, 10); AmbientBtn.TextColor3 = Color3.new(1, 1, 1); style(AmbientBtn)
+local SkyBox = Instance.new("TextBox", PageWorld); SkyBox.Size = UDim2.new(1, 0, 0, 40); SkyBox.Position=UDim2.new(0,0,0.25,0); SkyBox.PlaceholderText = "CUSTOM SKY ID"; SkyBox.Text = ""; SkyBox.BackgroundColor3 = Color3.fromRGB(20, 20, 20); SkyBox.TextColor3 = Color3.new(1, 1, 1); style(SkyBox)
+local SetSkyBtn = Instance.new("TextButton", PageWorld); SetSkyBtn.Size = UDim2.new(1, 0, 0, 40); SetSkyBtn.Position=UDim2.new(0,0,0.35,0); SetSkyBtn.Text = "APPLY CUSTOM SKY"; SetSkyBtn.BackgroundColor3 = Color3.fromRGB(20, 20, 20); SetSkyBtn.TextColor3 = Color3.new(1, 1, 1); style(SetSkyBtn)
+local SpaceSkyBtn = Instance.new("TextButton", PageWorld); SpaceSkyBtn.Size = UDim2.new(1, 0, 0, 40); SpaceSkyBtn.Position=UDim2.new(0,0,0.45,0); SpaceSkyBtn.Text = "SET SPACE SKY"; SpaceSkyBtn.BackgroundColor3 = Color3.fromRGB(20, 20, 40); SpaceSkyBtn.TextColor3 = Color3.new(1, 1, 1); style(SpaceSkyBtn)
 
 -- // AI PAGE SETUP // --
 local AIKeyBox = Instance.new("TextBox", PageAI); AIKeyBox.Size = UDim2.new(1, 0, 0, 40); AIKeyBox.Position = UDim2.new(0,0,0,0); AIKeyBox.PlaceholderText = "OPENAI KEY (sk-...)"; AIKeyBox.Text = ""; AIKeyBox.BackgroundColor3 = Color3.fromRGB(20, 20, 20); AIKeyBox.TextColor3 = Color3.new(1, 1, 1); style(AIKeyBox)
 local AIToggleBtn = Instance.new("TextButton", PageAI); AIToggleBtn.Size = UDim2.new(1, 0, 0, 40); AIToggleBtn.Position = UDim2.new(0, 0, 0.1, 0); AIToggleBtn.Text = "AI AUTOREPLY: OFF"; AIToggleBtn.BackgroundColor3 = Color3.fromRGB(30, 10, 10); AIToggleBtn.TextColor3 = Color3.new(1, 1, 1); style(AIToggleBtn)
 local FriendBtn = Instance.new("TextButton", PageAI); FriendBtn.Size = UDim2.new(1, 0, 0, 40); FriendBtn.Position = UDim2.new(0, 0, 0.2, 0); FriendBtn.Text = "FRIEND BOT: OFF"; FriendBtn.BackgroundColor3 = Color3.fromRGB(30, 10, 10); FriendBtn.TextColor3 = Color3.new(1, 1, 1); style(FriendBtn)
-
--- MACRO SECTION
-local MacroLabel = Instance.new("TextLabel", PageAI); MacroLabel.Size = UDim2.new(1,0,0,30); MacroLabel.Position = UDim2.new(0,0,0.32,0); MacroLabel.Text = "--- MACRO / CAR FIX ---"; MacroLabel.TextColor3 = Color3.new(1,1,1); MacroLabel.BackgroundTransparency = 1; MacroLabel.Font = Enum.Font.SciFi
 local RecBtn = Instance.new("TextButton", PageAI); RecBtn.Size = UDim2.new(0.48, 0, 0, 40); RecBtn.Position = UDim2.new(0, 0, 0.4, 0); RecBtn.Text = "RECORD"; RecBtn.BackgroundColor3 = Color3.fromRGB(40, 10, 10); RecBtn.TextColor3 = Color3.new(1, 1, 1); style(RecBtn)
 local PlayBtn = Instance.new("TextButton", PageAI); PlayBtn.Size = UDim2.new(0.48, 0, 0, 40); PlayBtn.Position = UDim2.new(0.52, 0, 0.4, 0); PlayBtn.Text = "PLAY"; PlayBtn.BackgroundColor3 = Color3.fromRGB(10, 40, 10); PlayBtn.TextColor3 = Color3.new(1, 1, 1); style(PlayBtn)
 local LoopBtn = Instance.new("TextButton", PageAI); LoopBtn.Size = UDim2.new(1, 0, 0, 40); LoopBtn.Position = UDim2.new(0, 0, 0.5, 0); LoopBtn.Text = "LOOP PLAYBACK: OFF"; LoopBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30); LoopBtn.TextColor3 = Color3.new(1, 1, 1); style(LoopBtn)
 local AIStatus = Instance.new("TextLabel", PageAI); AIStatus.Size = UDim2.new(1, 0, 0, 30); AIStatus.Position = UDim2.new(0, 0, 0.62, 0); AIStatus.BackgroundTransparency = 1; AIStatus.Text = "STATUS: IDLE"; AIStatus.TextColor3 = Color3.fromRGB(150, 150, 150); style(AIStatus, 0, 0)
-
--- // UI EDIT PAGE // --
-local UnlockBtn = Instance.new("TextButton", PageUI); UnlockBtn.Size=UDim2.new(1,0,0,50); UnlockBtn.BackgroundColor3=Color3.fromRGB(30,10,10); UnlockBtn.Text="UNLOCK MOVING: OFF"; UnlockBtn.TextColor3=Color3.new(1,1,1); style(UnlockBtn)
-local SaveBtn = Instance.new("TextButton", PageUI); SaveBtn.Size=UDim2.new(1,0,0,50); SaveBtn.Position=UDim2.new(0,0,0.15,0); SaveBtn.BackgroundColor3=Color3.fromRGB(10,30,10); SaveBtn.Text="SAVE CONFIG"; SaveBtn.TextColor3=Color3.new(1,1,1); style(SaveBtn)
-
--- // SIDE BUTTON // --
-local SideBtn = Instance.new("TextButton", ScreenGui); SideBtn.Name="SideBtn"; SideBtn.Size=UDim2.new(0,140,0,40); SideBtn.Position=UDim2.new(0,10,0.3,0); SideBtn.BackgroundColor3=Color3.fromRGB(15,15,15); SideBtn.Text="AngerMOD"; SideBtn.Font=Enum.Font.SciFi; SideBtn.TextSize=18; SideBtn.TextColor3=Color3.new(1,1,1); SideBtn.Visible=false; style(SideBtn,12,2); table.insert(RGB_Objects, {Type="Text", Instance=SideBtn}); table.insert(Movable_Objects, SideBtn)
-
--- // FLY GUI // --
-local FlyGui = Instance.new("Frame", ScreenGui); FlyGui.Name="FlyGui"; FlyGui.Size=UDim2.new(0,60,0,150); FlyGui.Position=UDim2.new(0.9,0,0.5,0); FlyGui.BackgroundTransparency=1; FlyGui.Visible=false; table.insert(Movable_Objects, FlyGui)
-local btnUp = Instance.new("TextButton", FlyGui); btnUp.Size=UDim2.new(1,0,0,60); btnUp.Position=UDim2.new(0,0,0,0); btnUp.BackgroundColor3=Color3.fromRGB(20,20,20); btnUp.Text="UP"; btnUp.TextColor3=Color3.new(1,1,1); style(btnUp)
-local btnDn = Instance.new("TextButton", FlyGui); btnDn.Size=UDim2.new(1,0,0,60); btnDn.Position=UDim2.new(0,0,0.5,0); btnDn.BackgroundColor3=Color3.fromRGB(20,20,20); btnDn.Text="DN"; btnDn.TextColor3=Color3.new(1,1,1); style(btnDn)
-
--- // LOGIN FRAME // --
-local LFrame = Instance.new("Frame", ScreenGui); LFrame.Size=UDim2.new(0,300,0,150); LFrame.Position=UDim2.new(0.5,-150,0.5,-75); LFrame.BackgroundColor3=Color3.fromRGB(12,12,12); style(LFrame,8,2)
-local LI = Instance.new("TextBox", LFrame); LI.Size=UDim2.new(0.8,0,0,40); LI.Position=UDim2.new(0.1,0,0.2,0); LI.BackgroundColor3=Color3.fromRGB(20,20,20); LI.TextColor3=Color3.new(1,1,1); LI.Text=""; LI.PlaceholderText="AngerPC V117"; style(LI)
-local LB = Instance.new("TextButton", LFrame); LB.Size=UDim2.new(0.5,0,0,40); LB.Position=UDim2.new(0.25,0,0.6,0); LB.BackgroundColor3=Color3.fromRGB(25,25,25); LB.Text="LOGIN"; LB.TextColor3=Color3.new(1,1,1); style(LB)
 
 -- [[ 2. LOGIC ]] --
 local States = { AI = false, Watermark = true, FriendBot = false, IsFollowing = true, IsRecording = false, IsPlaying = false, LoopPlay = false, AmbientSync = false, NoFog = false } 
@@ -133,6 +118,14 @@ local function SmartMove(targetCF)
     local root = char:FindFirstChild("HumanoidRootPart"); if not root then return end
     local car = nil; if char:FindFirstChild("Humanoid") and char.Humanoid.SeatPart then car = char.Humanoid.SeatPart.Parent end
     if car and car:IsA("Model") then local mainPart = car.PrimaryPart or char.Humanoid.SeatPart; mainPart.Velocity = Vector3.new(0,0,0); mainPart.CFrame = targetCF else root.CFrame = targetCF end
+end
+
+local function SendChat(msg)
+    if game:GetService("TextChatService").ChatVersion == Enum.ChatVersion.TextChatService then
+        game:GetService("TextChatService").TextChannels.RBXGeneral:SendAsync(msg)
+    else
+        game:GetService("ReplicatedStorage").DefaultChatSystemChatEvents.SayMessageRequest:FireServer(msg, "All")
+    end
 end
 
 btnUp.MouseButton1Down:Connect(function() up = true end); btnUp.MouseButton1Up:Connect(function() up = false end)
@@ -188,7 +181,7 @@ UnlockBtn.MouseButton1Click:Connect(function()
     isUnlocked = not isUnlocked; UnlockBtn.Text = isUnlocked and "UNLOCK MOVING: ON" or "UNLOCK MOVING: OFF"; UnlockBtn.BackgroundColor3 = isUnlocked and Color3.fromRGB(10,50,10) or Color3.fromRGB(30,10,10)
     for _, obj in pairs(Movable_Objects) do obj.Active = isUnlocked; obj.Draggable = isUnlocked end
 end)
-local ConfigName = "AngerConfig_V117.json"
+local ConfigName = "AngerConfig_V119.json"
 SaveBtn.MouseButton1Click:Connect(function()
     local data = {}; for _, obj in pairs(Movable_Objects) do data[obj.Name] = {X_S=obj.Position.X.Scale, X_O=obj.Position.X.Offset, Y_S=obj.Position.Y.Scale, Y_O=obj.Position.Y.Offset} end
     if writefile then writefile(ConfigName, game:GetService("HttpService"):JSONEncode(data)); SaveBtn.Text="SAVED!"; task.wait(1); SaveBtn.Text="SAVE CONFIG" end
@@ -200,22 +193,20 @@ FogBtn.MouseButton1Click:Connect(function()
     States.NoFog = not States.NoFog
     FogBtn.Text = States.NoFog and "REMOVE FOG: ON" or "REMOVE FOG: OFF"
     FogBtn.BackgroundColor3 = States.NoFog and Color3.fromRGB(10, 50, 10) or Color3.fromRGB(30, 10, 10)
-    if not States.NoFog then Lighting.FogEnd = 1000 end -- Reset sort of
+    if not States.NoFog then Lighting.FogEnd = 1000 end
 end)
-
 AmbientBtn.MouseButton1Click:Connect(function()
     States.AmbientSync = not States.AmbientSync
     AmbientBtn.Text = States.AmbientSync and "AMBIENT SYNC: ON" or "AMBIENT SYNC: OFF"
     AmbientBtn.BackgroundColor3 = States.AmbientSync and Color3.fromRGB(10, 50, 10) or Color3.fromRGB(30, 10, 10)
 end)
-
 local function SetSky(id)
     local sky = Lighting:FindFirstChildOfClass("Sky") or Instance.new("Sky", Lighting)
     local tex = "rbxassetid://" .. id
     sky.SkyboxBk, sky.SkyboxDn, sky.SkyboxFt, sky.SkyboxLf, sky.SkyboxRt, sky.SkyboxUp = tex, tex, tex, tex, tex, tex
 end
 SetSkyBtn.MouseButton1Click:Connect(function() if SkyBox.Text ~= "" then SetSky(SkyBox.Text) end end)
-SpaceSkyBtn.MouseButton1Click:Connect(function() SetSky("159454299") end) -- Space ID
+SpaceSkyBtn.MouseButton1Click:Connect(function() SetSky("159454299") end) 
 
 -- [[ MACRO LOGIC ]] --
 RecBtn.MouseButton1Click:Connect(function()
@@ -245,12 +236,20 @@ LoopBtn.MouseButton1Click:Connect(function()
     LoopBtn.BackgroundColor3 = States.LoopPlay and Color3.fromRGB(10, 50, 10) or Color3.fromRGB(30, 30, 30)
 end)
 
--- [[ AI LOGIC ]] --
+-- [[ AI LOGIC WITH MEMORY ]] --
 local AI_Debounce = false
-AIToggleBtn.MouseButton1Click:Connect(function() States.AI = not States.AI; AIToggleBtn.Text = States.AI and "AI AUTOREPLY: ON" or "AI AUTOREPLY: OFF"; AIToggleBtn.BackgroundColor3 = States.AI and Color3.fromRGB(10, 50, 10) or Color3.fromRGB(30, 10, 10) end)
-FriendBtn.MouseButton1Click:Connect(function() States.FriendBot = not States.FriendBot; FriendBtn.Text = States.FriendBot and "FRIEND BOT: ON" or "FRIEND BOT: OFF"; FriendBtn.BackgroundColor3 = States.FriendBot and Color3.fromRGB(10, 50, 10) or Color3.fromRGB(30, 10, 10) end)
-
-local function SendChat(msg) if game:GetService("TextChatService").ChatVersion == Enum.ChatVersion.TextChatService then game:GetService("TextChatService").TextChannels.RBXGeneral:SendAsync(msg) else game:GetService("ReplicatedStorage").DefaultChatSystemChatEvents.SayMessageRequest:FireServer(msg, "All") end end
+AIToggleBtn.MouseButton1Click:Connect(function() 
+    States.AI = not States.AI
+    AIToggleBtn.Text = States.AI and "AI AUTOREPLY: ON" or "AI AUTOREPLY: OFF"
+    AIToggleBtn.BackgroundColor3 = States.AI and Color3.fromRGB(10, 50, 10) or Color3.fromRGB(30, 10, 10)
+    if States.AI then SendChat("AngerAI: Модуль чата активен. Спрашивай что угодно!") end
+end)
+FriendBtn.MouseButton1Click:Connect(function() 
+    States.FriendBot = not States.FriendBot
+    FriendBtn.Text = States.FriendBot and "FRIEND BOT: ON" or "FRIEND BOT: OFF"
+    FriendBtn.BackgroundColor3 = States.FriendBot and Color3.fromRGB(10, 50, 10) or Color3.fromRGB(30, 10, 10) 
+    if States.FriendBot then SendChat("Я теперь твой хвостик! Куда мы идем?") end
+end)
 
 local function ExecuteCommand(msg)
     local m = string.lower(msg); local char = Player.Character; local hum = char and char:FindFirstChild("Humanoid")
@@ -266,12 +265,34 @@ local function ProcessAI(msg, senderName)
     if AI_Debounce then return end
     if States.FriendBot and ExecuteCommand(msg) then return end 
     if not States.AI then return end
-    AI_Debounce = true; AIStatus.Text = "STATUS: THINKING..."; local apiKey = AIKeyBox.Text; if apiKey == "" then AIStatus.Text = "ERROR: NO KEY"; AI_Debounce = false; return end
+    AI_Debounce = true; AIStatus.Text = "STATUS: THINKING..."
+    local apiKey = AIKeyBox.Text; if apiKey == "" then AIStatus.Text = "ERROR: NO KEY"; AI_Debounce = false; return end
+
+    -- ADD USER MSG TO HISTORY
+    table.insert(ChatHistory, {role = "user", content = senderName .. ": " .. msg})
+    
+    -- PRUNE HISTORY (KEEP MEMORY SMALL)
+    if #ChatHistory > 12 then table.remove(ChatHistory, 2) end
+
     local success, response = pcall(function()
-        return request({ Url = "https://api.openai.com/v1/chat/completions", Method = "POST", Headers = {["Content-Type"] = "application/json", ["Authorization"] = "Bearer " .. apiKey},
-            Body = HttpService:JSONEncode({ model = "gpt-4o-mini", messages = {{role = "system", content = "Ты — AngerPC, топовый игрок в Roblox. Дерзкий, сленговый. Если кто умер - соболезнуй как бро. Не пиши 'Жаль'. Пиши живо."}, {role = "user", content = senderName .. " сказал: " .. msg}}, max_tokens = 60 }) })
+        return request({ 
+            Url = "https://api.openai.com/v1/chat/completions", 
+            Method = "POST", 
+            Headers = {["Content-Type"] = "application/json", ["Authorization"] = "Bearer " .. apiKey},
+            Body = HttpService:JSONEncode({ model = "gpt-4o-mini", messages = ChatHistory, max_tokens = 60 }) 
+        })
     end)
-    if success and response.Body then local data = HttpService:JSONDecode(response.Body); if data.choices and data.choices[1] then SendChat(data.choices[1].message.content); AIStatus.Text = "STATUS: REPLIED" else AIStatus.Text = "ERROR: API FAIL" end else AIStatus.Text = "ERROR: REQUEST FAIL" end
+
+    if success and response.Body then 
+        local data = HttpService:JSONDecode(response.Body)
+        if data.choices and data.choices[1] then 
+            local reply = data.choices[1].message.content
+            SendChat(reply)
+            table.insert(ChatHistory, {role = "assistant", content = reply}) -- REMEMBER REPLY
+            AIStatus.Text = "STATUS: REPLIED" 
+        else AIStatus.Text = "ERROR: API FAIL" end
+    else AIStatus.Text = "ERROR: REQUEST FAIL" end
+    
     task.wait(2); AI_Debounce = false; task.wait(1); AIStatus.Text = "STATUS: WAITING..."
 end
 for _, p in pairs(Players:GetPlayers()) do p.Chatted:Connect(function(msg) if p ~= Player then ProcessAI(msg, p.Name) end end) end
@@ -296,47 +317,68 @@ end
 
 Player.CharacterAdded:Connect(function(char) DeathScreen.Enabled = false; char:WaitForChild("Humanoid").Died:Connect(function() DeathScreen.Enabled = true end) end)
 
--- [[ RENDER LOOP ]] --
+-- [[ RENDER LOOP (PROTECTED) ]] --
 local lastGhostTime = 0
 RunService.RenderStepped:Connect(function()
-    local tickTime = tick()
-    local currentThemeName = Themes[CurrentThemeIndex]
-    local activeColor = Color3.new(1,1,1)
-    if currentThemeName == "RGB" then activeColor = Color3.fromHSV(tickTime % 3 / 3, 1, 1) elseif ThemeColors[currentThemeName] then activeColor = ThemeColors[currentThemeName] end
-    
-    -- WORLD SYNC
-    if States.AmbientSync then Lighting.OutdoorAmbient = activeColor; Lighting.Ambient = activeColor end
-    if States.NoFog then Lighting.FogEnd = 1000000; Lighting.FogStart = 1000000 end
+    pcall(function() 
+        local tickTime = tick()
+        local currentThemeName = Themes[CurrentThemeIndex]
+        local activeColor = Color3.new(1,1,1)
+        if currentThemeName == "RGB" then activeColor = Color3.fromHSV(tickTime % 3 / 3, 1, 1) elseif ThemeColors[currentThemeName] then activeColor = ThemeColors[currentThemeName] end
+        
+        -- WORLD SYNC
+        if States.AmbientSync then Lighting.OutdoorAmbient = activeColor; Lighting.Ambient = activeColor end
+        if States.NoFog then Lighting.FogEnd = 1000000; Lighting.FogStart = 1000000 end
 
-    DeathLabel.TextColor3 = activeColor
-    for i, obj in pairs(RGB_Objects) do 
-        if obj.Instance and obj.Instance.Parent then 
-            if obj.Type == "Stroke" then obj.Instance.Color = activeColor elseif obj.Type == "Text" then obj.Instance.TextColor3 = activeColor elseif obj.Type == "Image" then obj.Instance.ImageColor3 = activeColor elseif obj.Type == "Part" then obj.Instance.Color = activeColor end 
-        else table.remove(RGB_Objects, i) end 
-    end
-    
-    local wm = ScreenGui.Parent:FindFirstChild("AngerWatermark"); if wm then wm.Enabled = States.Watermark end
-    if PageInfo.Visible then InfoLabel.Text = string.format("SESSION:\nUser: %s\nID: %s\nFPS: %d\nPing: %d ms", Player.Name, SessionID, math.floor(workspace:GetRealPhysicsFPS()), math.floor(Stats.Network.ServerStatsItem["Data Ping"]:GetValue())) end
+        DeathLabel.TextColor3 = activeColor
+        for i, obj in pairs(RGB_Objects) do 
+            if obj.Instance and obj.Instance.Parent then 
+                if obj.Type == "Stroke" then obj.Instance.Color = activeColor elseif obj.Type == "Text" then obj.Instance.TextColor3 = activeColor elseif obj.Type == "Image" then obj.Instance.ImageColor3 = activeColor elseif obj.Type == "Part" then obj.Instance.Color = activeColor end 
+            else table.remove(RGB_Objects, i) end 
+        end
+        
+        local wm = ScreenGui.Parent:FindFirstChild("AngerWatermark"); if wm then wm.Enabled = States.Watermark end
+        if PageInfo.Visible then InfoLabel.Text = string.format("SESSION:\nUser: %s\nID: %s\nFPS: %d\nPing: %d ms", Player.Name, SessionID, math.floor(workspace:GetRealPhysicsFPS()), math.floor(Stats.Network.ServerStatsItem["Data Ping"]:GetValue())) end
 
-    local char = Player.Character; if not char or not char:FindFirstChild("HumanoidRootPart") then return end
-    local hum = char:FindFirstChild("Humanoid"); local root = char:FindFirstChild("HumanoidRootPart")
+        local char = Player.Character; if not char or not char:FindFirstChild("HumanoidRootPart") then return end
+        local hum = char:FindFirstChild("Humanoid"); local root = char:FindFirstChild("HumanoidRootPart")
 
-    if States.IsRecording then local pos = root.CFrame; if hum and hum.SeatPart then pos = hum.SeatPart.CFrame end; table.insert(RecordedPath, {CF = pos, Jump = hum.Jump, Sit = hum.Sit}) end
+        if States.IsRecording then local pos = root.CFrame; if hum and hum.SeatPart then pos = hum.SeatPart.CFrame end; table.insert(RecordedPath, {CF = pos, Jump = hum.Jump, Sit = hum.Sit}) end
 
-    if States.UnlockAll then Player.CameraMaxZoomDistance = 100000; Player.CameraMinZoomDistance = 0; Player.CameraMode = Enum.CameraMode.Classic end
-    if States.SpdBypass and hum.MoveDirection.Magnitude > 0 then root.CFrame = root.CFrame + (hum.MoveDirection * valBypassSpeed) end
-    if States.Fly and root and hum then root.Velocity = Vector3.new(0, 0.1, 0); if hum.MoveDirection.Magnitude > 0 then root.CFrame = root.CFrame + (hum.MoveDirection * valFlySpeed) end; if up then root.CFrame = root.CFrame * CFrame.new(0, valFlySpeed, 0) end; if down then root.CFrame = root.CFrame * CFrame.new(0, -valFlySpeed, 0) end end
-    if States.KillAura then local tool = char:FindFirstChildOfClass("Tool"); if tool and tool:FindFirstChild("Handle") then for _, v in pairs(game.Players:GetPlayers()) do if v ~= Player and v.Character and v.Character:FindFirstChild("Head") and v.Character.Humanoid.Health > 0 then local dist = (v.Character.Head.Position - root.Position).Magnitude; if dist < 50 then tool.Handle.CFrame = v.Character.Head.CFrame; tool:Activate(); pcall(function() firetouchinterest(tool.Handle, v.Character.Head, 0); firetouchinterest(tool.Handle, v.Character.Head, 1) end); break end end end end end
-    if States.Ghosts and tick() - lastGhostTime > valGhostRate then lastGhostTime = tick(); for _, v in pairs(char:GetChildren()) do if v:IsA("BasePart") and v.Transparency < 1 then local g = v:Clone(); g.Parent = workspace; g.Anchored = true; g.CanCollide = false; g.CFrame = v.CFrame; g.Color = activeColor; g.Material = Enum.Material.Neon; g:ClearAllChildren(); TweenService:Create(g, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Transparency=1, CFrame=g.CFrame*CFrame.Angles(math.rad(math.random(-180,180)),math.rad(math.random(-180,180)),0), Size=g.Size*1.1}):Play(); Debris:AddItem(g, 0.5) end end end
-    if States.Spd and hum.MoveDirection.Magnitude > 0 then root.CFrame += (hum.MoveDirection * (0.5 * valSpeed)) end
-    if States.Jump then hum.UseJumpPower = true; hum.JumpPower = valJumpPower else hum.JumpPower = 50 end
-    
-    if States.FriendBot and States.IsFollowing and not States.IsPlaying then
-        local target = GetClosestPlayer()
-        if target then if (target.Position - root.Position).Magnitude > 7 then hum:MoveTo(target.Position) else hum:Move(Vector3.new(0,0,0)) end end
-    end
+        if States.UnlockAll then Player.CameraMaxZoomDistance = 100000; Player.CameraMinZoomDistance = 0; Player.CameraMode = Enum.CameraMode.Classic end
+        if States.SpdBypass and hum.MoveDirection.Magnitude > 0 then root.CFrame = root.CFrame + (hum.MoveDirection * valBypassSpeed) end
+        if States.Fly and root and hum then root.Velocity = Vector3.new(0, 0.1, 0); if hum.MoveDirection.Magnitude > 0 then root.CFrame = root.CFrame + (hum.MoveDirection * valFlySpeed) end; if up then root.CFrame = root.CFrame * CFrame.new(0, valFlySpeed, 0) end; if down then root.CFrame = root.CFrame * CFrame.new(0, -valFlySpeed, 0) end end
+        if States.KillAura then local tool = char:FindFirstChildOfClass("Tool"); if tool and tool:FindFirstChild("Handle") then for _, v in pairs(game.Players:GetPlayers()) do if v ~= Player and v.Character and v.Character:FindFirstChild("Head") and v.Character.Humanoid.Health > 0 then local dist = (v.Character.Head.Position - root.Position).Magnitude; if dist < 50 then tool.Handle.CFrame = v.Character.Head.CFrame; tool:Activate(); pcall(function() firetouchinterest(tool.Handle, v.Character.Head, 0); firetouchinterest(tool.Handle, v.Character.Head, 1) end); break end end end end end
+        if States.Ghosts and tick() - lastGhostTime > valGhostRate then lastGhostTime = tick(); for _, v in pairs(char:GetChildren()) do if v:IsA("BasePart") and v.Transparency < 1 then local g = v:Clone(); g.Parent = workspace; g.Anchored = true; g.CanCollide = false; g.CFrame = v.CFrame; g.Color = activeColor; g.Material = Enum.Material.Neon; g:ClearAllChildren(); TweenService:Create(g, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Transparency=1, CFrame=g.CFrame*CFrame.Angles(math.rad(math.random(-180,180)),math.rad(math.random(-180,180)),0), Size=g.Size*1.1}):Play(); Debris:AddItem(g, 0.5) end end end
+        if States.Spd and hum.MoveDirection.Magnitude > 0 then root.CFrame += (hum.MoveDirection * (0.5 * valSpeed)) end
+        if States.Jump then hum.UseJumpPower = true; hum.JumpPower = valJumpPower else hum.JumpPower = 50 end
+        
+        if States.FriendBot and States.IsFollowing and not States.IsPlaying then
+            local target = GetClosestPlayer()
+            if target then if (target.Position - root.Position).Magnitude > 7 then hum:MoveTo(target.Position) else hum:Move(Vector3.new(0,0,0)) end end
+        end
 
-    for _, v in pairs(game.Players:GetPlayers()) do if v ~= Player and v.Character and v.Character:FindFirstChild("Head") then local head = v.Character.Head; head.Size = States.Hitbox and Vector3.new(valHitbox, valHitbox, valHitbox) or Vector3.new(1,1,1); head.Transparency = States.Hitbox and 0.7 or 0; head.CanCollide = false; if States.Hitbox then head.Color = activeColor; head.Material = Enum.Material.Neon end end end
+        if States.Esp then
+            for _, v in pairs(game.Players:GetPlayers()) do
+                if v ~= Player and v.Character then
+                    if not v.Character:FindFirstChild("AngerESP") then
+                        local hl = Instance.new("Highlight", v.Character)
+                        hl.Name = "AngerESP"
+                        hl.FillTransparency = 0.5
+                        hl.OutlineTransparency = 0
+                    else
+                        v.Character.AngerESP.FillColor = activeColor
+                    end
+                end
+            end
+        else
+            for _, v in pairs(game.Players:GetPlayers()) do
+                if v.Character and v.Character:FindFirstChild("AngerESP") then v.Character.AngerESP:Destroy() end
+            end
+        end
+
+        for _, v in pairs(game.Players:GetPlayers()) do if v ~= Player and v.Character and v.Character:FindFirstChild("Head") then local head = v.Character.Head; head.Size = States.Hitbox and Vector3.new(valHitbox, valHitbox, valHitbox) or Vector3.new(1,1,1); head.Transparency = States.Hitbox and 0.7 or 0; head.CanCollide = false; if States.Hitbox then head.Color = activeColor; head.Material = Enum.Material.Neon end end end
+    end)
 end)
 
 UserInputService.JumpRequest:Connect(function() if States.InfJump and Player.Character and Player.Character:FindFirstChild("Humanoid") then Player.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping) end; if States.Circle then SpawnRipple() end end)
@@ -349,4 +391,4 @@ end)
 task.spawn(function()
     local pentagramUrl = "https://raw.githubusercontent.com/AngerPC-DEV/AngerMOD/main/circle1.png"; local pentagramName = "Anger_Pentagram_Circle1.png"
     if writefile and readfile and isfile then pcall(function() if not isfile(pentagramName) then writefile(pentagramName, game:HttpGet(pentagramUrl)) end end) end
-end)    
+end))
