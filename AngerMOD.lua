@@ -1,4 +1,4 @@
--- [[ ⛧ AngerPC ⛧ V122 ULTIMATE FIXED ]] --
+-- [[ ⛧ AngerPC ⛧ V123 ULTIMATE WALK-FIX ]] --
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -41,7 +41,7 @@ local CurrentThemeIndex = 1
 
 -- [[ 1. GUI SETUP ]] --
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "AngerGUI_V122_Full"
+ScreenGui.Name = "AngerGUI_V123"
 ScreenGui.ResetOnSpawn = false 
 
 if Player:FindFirstChild("PlayerGui") then
@@ -81,7 +81,7 @@ end
 local btnTabMain = MakeTab("MAIN"); local btnTabInfo = MakeTab("INFO"); local btnTabAI = MakeTab("AI"); local btnTabWorld = MakeTab("WORLD"); local btnTabUI = MakeTab("UI")
 
 -- TITLE
-local Title = Instance.new("TextLabel", Main); Title.Size=UDim2.new(1,0,0,45); Title.BackgroundTransparency=1; Title.Text="AngerPC V122 (FIXED)"; Title.Font=Enum.Font.SciFi; Title.TextSize=24; Title.TextColor3=Color3.new(1,1,1); table.insert(RGB_Objects, {Type="Text", Instance=Title})
+local Title = Instance.new("TextLabel", Main); Title.Size=UDim2.new(1,0,0,45); Title.BackgroundTransparency=1; Title.Text="AngerPC V123 (KB FIX)"; Title.Font=Enum.Font.SciFi; Title.TextSize=24; Title.TextColor3=Color3.new(1,1,1); table.insert(RGB_Objects, {Type="Text", Instance=Title})
 
 -- // PAGES // --
 local PageMain = Instance.new("ScrollingFrame", Main); PageMain.Size=UDim2.new(1,-20,0.78,0); PageMain.Position=UDim2.new(0,10,0.18,0); PageMain.BackgroundTransparency=1; PageMain.ScrollBarThickness=2; PageMain.Visible=true; Instance.new("UIListLayout", PageMain).Padding=UDim.new(0,8)
@@ -129,7 +129,7 @@ local SideBtn = Instance.new("TextButton", ScreenGui); SideBtn.Name = "ToggleMen
 local States = { 
     AI = false, Watermark = true, FriendBot = false, IsFollowing = true, 
     IsRecording = false, IsPlaying = false, LoopPlay = false, AmbientSync = false, 
-    NoFog = false, Aim = false, Hitbox = false, AntiKnockback = false 
+    NoFog = false, Aim = false, Hitbox = false, AntiKnockback = false, UnlockAll = false 
 } 
 local valSmooth, valHitbox, valFlySpeed, valSpeed, valBypassSpeed, valJumpPower, valRipple, valGhostRate = 0.15, 5, 5, 50, 0.11, 100, 15, 0.05
 local up, down = false, false
@@ -189,7 +189,8 @@ end
 -- [ OPTIONS ] --
 addOption("SHOW LOGO", "Watermark", false) 
 addOption("HUMAN AIM", "Aim", true, valSmooth, function(v) valSmooth = math.clamp(v, 0.01, 1) end)
-addOption("ANTI KNOCKBACK", "AntiKnockback", false) -- NEW
+addOption("ANTI KNOCKBACK", "AntiKnockback", false) -- FIXED WALK
+addOption("INF ZOOM", "UnlockAll", false) -- RESTORED
 addOption("SPEED BYPASS", "SpdBypass", true, valBypassSpeed, function(v) valBypassSpeed = v end)
 addOption("KILL AURA", "KillAura", false)
 addOption("BIG HITBOX", "Hitbox", true, valHitbox, function(v) valHitbox = v end)
@@ -212,7 +213,7 @@ UnlockBtn.MouseButton1Click:Connect(function()
     isUnlocked = not isUnlocked; UnlockBtn.Text = isUnlocked and "UNLOCK MOVING: ON" or "UNLOCK MOVING: OFF"; UnlockBtn.BackgroundColor3 = isUnlocked and Color3.fromRGB(10,50,10) or Color3.fromRGB(30,10,10)
     for _, obj in pairs(Movable_Objects) do obj.Active = isUnlocked; obj.Draggable = isUnlocked end
 end)
-local ConfigName = "AngerConfig_V122.json"
+local ConfigName = "AngerConfig_V123.json"
 SaveBtn.MouseButton1Click:Connect(function()
     local data = {}; for _, obj in pairs(Movable_Objects) do data[obj.Name] = {X_S=obj.Position.X.Scale, X_O=obj.Position.X.Offset, Y_S=obj.Position.Y.Scale, Y_O=obj.Position.Y.Offset} end
     if writefile then writefile(ConfigName, game:GetService("HttpService"):JSONEncode(data)); SaveBtn.Text="SAVED!"; task.wait(1); SaveBtn.Text="SAVE CONFIG" end
@@ -366,10 +367,17 @@ RunService.RenderStepped:Connect(function()
         local char = Player.Character; if not char or not char:FindFirstChild("HumanoidRootPart") then return end
         local hum = char:FindFirstChild("Humanoid"); local root = char:FindFirstChild("HumanoidRootPart")
 
-        -- [[ ANTI KNOCKBACK LOGIC ]] --
+        -- [[ ANTI KNOCKBACK LOGIC FIX ]] --
         if States.AntiKnockback then
+             -- Проверяем, если скорость слишком большая (удар)
              if root.Velocity.Magnitude > 25 then
-                 root.Velocity = Vector3.new(0,0,0)
+                 if hum.MoveDirection.Magnitude > 0 then
+                    -- Если игрок пытается ходить, разрешаем движение, но убираем импульс
+                    root.Velocity = hum.MoveDirection * hum.WalkSpeed
+                 else
+                    -- Если игрок стоит на месте, замораживаем, чтобы не улетел
+                    root.Velocity = Vector3.new(0,0,0)
+                 end
                  root.RotVelocity = Vector3.new(0,0,0)
              end
         end
@@ -378,14 +386,19 @@ RunService.RenderStepped:Connect(function()
         if States.Aim then
             local target = GetClosestPlayer()
             if target and target:FindFirstChild("Head") then
-                -- Плавно наводим камеру
                 Camera.CFrame = Camera.CFrame:Lerp(CFrame.new(Camera.CFrame.Position, target.Head.Position), valSmooth)
             end
         end
 
         if States.IsRecording then local pos = root.CFrame; if hum and hum.SeatPart then pos = hum.SeatPart.CFrame end; table.insert(RecordedPath, {CF = pos, Jump = hum.Jump, Sit = hum.Sit}) end
 
-        if States.UnlockAll then Player.CameraMaxZoomDistance = 100000; Player.CameraMinZoomDistance = 0; Player.CameraMode = Enum.CameraMode.Classic end
+        -- [[ UNLOCK ZOOM ]] --
+        if States.UnlockAll then 
+            Player.CameraMaxZoomDistance = 100000
+            Player.CameraMinZoomDistance = 0 
+            Player.CameraMode = Enum.CameraMode.Classic 
+        end
+
         if States.SpdBypass and hum.MoveDirection.Magnitude > 0 then root.CFrame = root.CFrame + (hum.MoveDirection * valBypassSpeed) end
         if States.Fly and root and hum then root.Velocity = Vector3.new(0, 0.1, 0); if hum.MoveDirection.Magnitude > 0 then root.CFrame = root.CFrame + (hum.MoveDirection * valFlySpeed) end; if up then root.CFrame = root.CFrame * CFrame.new(0, valFlySpeed, 0) end; if down then root.CFrame = root.CFrame * CFrame.new(0, -valFlySpeed, 0) end end
         if States.KillAura then local tool = char:FindFirstChildOfClass("Tool"); if tool and tool:FindFirstChild("Handle") then for _, v in pairs(game.Players:GetPlayers()) do if v ~= Player and v.Character and v.Character:FindFirstChild("Head") and v.Character.Humanoid.Health > 0 then local dist = (v.Character.Head.Position - root.Position).Magnitude; if dist < 50 then tool.Handle.CFrame = v.Character.Head.CFrame; tool:Activate(); pcall(function() firetouchinterest(tool.Handle, v.Character.Head, 0); firetouchinterest(tool.Handle, v.Character.Head, 1) end); break end end end end end
