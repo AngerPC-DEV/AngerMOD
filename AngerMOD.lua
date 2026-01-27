@@ -137,6 +137,7 @@ MusicIcon.Size = UDim2.new(0, 50, 0, 50)
 MusicIcon.Position = UDim2.new(0, 10, 0, 10)
 MusicIcon.BackgroundTransparency = 1
 MusicIcon.Image = "rbxassetid://6031265976"
+table.insert(RGB_Objects, {Type = "Image", Instance = MusicIcon})
 
 local MusicTitle = Instance.new("TextLabel", MusicWidget)
 MusicTitle.Size = UDim2.new(1, -70, 0, 25)
@@ -247,18 +248,21 @@ local UnlockBtn = Instance.new("TextButton", PageUI); UnlockBtn.Size = UDim2.new
 local SaveBtn = Instance.new("TextButton", PageUI); SaveBtn.Size = UDim2.new(1, 0, 0, 40); SaveBtn.Position = UDim2.new(0,0,0.12,0); SaveBtn.Text = "SAVE CONFIG"; SaveBtn.BackgroundColor3 = Color3.fromRGB(20,20,40); SaveBtn.TextColor3 = Color3.new(1,1,1); style(SaveBtn)
 
 -- // MUSIC PAGE // --
-local MusicIDBox = Instance.new("TextBox", PageMusic); MusicIDBox.Size = UDim2.new(1, 0, 0, 40); MusicIDBox.PlaceholderText = "ROBLOX AUDIO ID"; MusicIDBox.Text = ""; MusicIDBox.BackgroundColor3 = Color3.fromRGB(20, 20, 20); MusicIDBox.TextColor3 = Color3.new(1, 1, 1); style(MusicIDBox)
-local PlayIDBtn = Instance.new("TextButton", PageMusic); PlayIDBtn.Size = UDim2.new(1, 0, 0, 40); PlayIDBtn.Text = "PLAY BY ID"; PlayIDBtn.BackgroundColor3 = Color3.fromRGB(20, 40, 20); PlayIDBtn.TextColor3 = Color3.new(1, 1, 1); style(PlayIDBtn)
+local MusicIDBox = Instance.new("TextBox", PageMusic); MusicIDBox.Size = UDim2.new(1, 0, 0, 40); MusicIDBox.PlaceholderText = "ROBLOX AUDIO ID"; MusicIDBox.Text = ""; MusicIDBox.BackgroundColor3 = Color3.fromRGB(20, 20, 20); MusicIDBox.TextColor3 = Color3.new(1, 1, 1); MusicIDBox.Font = Enum.Font.SciFi; MusicIDBox.TextSize = 16; style(MusicIDBox)
 
-local YouTubeLinkBox = Instance.new("TextBox", PageMusic); YouTubeLinkBox.Size = UDim2.new(1, 0, 0, 40); YouTubeLinkBox.PlaceholderText = "YOUTUBE LINK"; YouTubeLinkBox.Text = ""; YouTubeLinkBox.BackgroundColor3 = Color3.fromRGB(20, 20, 20); YouTubeLinkBox.TextColor3 = Color3.new(1, 1, 1); style(YouTubeLinkBox)
-local PlayYTBtn = Instance.new("TextButton", PageMusic); PlayYTBtn.Size = UDim2.new(1, 0, 0, 40); PlayYTBtn.Text = "PLAY FROM YOUTUBE"; PlayYTBtn.BackgroundColor3 = Color3.fromRGB(40, 20, 20); PlayYTBtn.TextColor3 = Color3.new(1, 1, 1); style(PlayYTBtn)
+local PlayIDBtn = Instance.new("TextButton", PageMusic); PlayIDBtn.Size = UDim2.new(1, 0, 0, 40); PlayIDBtn.Text = "▶ PLAY BY ID"; PlayIDBtn.BackgroundColor3 = Color3.fromRGB(20, 40, 20); PlayIDBtn.TextColor3 = Color3.new(1, 1, 1); PlayIDBtn.Font = Enum.Font.SciFi; PlayIDBtn.TextSize = 16; style(PlayIDBtn)
 
-local SearchBox = Instance.new("TextBox", PageMusic); SearchBox.Size = UDim2.new(1, 0, 0, 40); SearchBox.PlaceholderText = "SEARCH BY NAME"; SearchBox.Text = ""; SearchBox.BackgroundColor3 = Color3.fromRGB(20, 20, 20); SearchBox.TextColor3 = Color3.new(1, 1, 1); style(SearchBox)
-local SearchBtn = Instance.new("TextButton", PageMusic); SearchBtn.Size = UDim2.new(1, 0, 0, 40); SearchBtn.Text = "SEARCH MUSIC"; SearchBtn.BackgroundColor3 = Color3.fromRGB(20, 20, 40); SearchBtn.TextColor3 = Color3.new(1, 1, 1); style(SearchBtn)
+local YouTubeLinkBox = Instance.new("TextBox", PageMusic); YouTubeLinkBox.Size = UDim2.new(1, 0, 0, 40); YouTubeLinkBox.PlaceholderText = "YOUTUBE LINK OR VIDEO ID"; YouTubeLinkBox.Text = ""; YouTubeLinkBox.BackgroundColor3 = Color3.fromRGB(20, 20, 20); YouTubeLinkBox.TextColor3 = Color3.new(1, 1, 1); YouTubeLinkBox.Font = Enum.Font.SciFi; YouTubeLinkBox.TextSize = 16; style(YouTubeLinkBox)
 
-local StopMusicBtn = Instance.new("TextButton", PageMusic); StopMusicBtn.Size = UDim2.new(1, 0, 0, 40); StopMusicBtn.Text = "STOP MUSIC"; StopMusicBtn.BackgroundColor3 = Color3.fromRGB(40, 10, 10); StopMusicBtn.TextColor3 = Color3.new(1, 1, 1); style(StopMusicBtn)
+local PlayYTBtn = Instance.new("TextButton", PageMusic); PlayYTBtn.Size = UDim2.new(1, 0, 0, 40); PlayYTBtn.Text = "🎵 PLAY FROM YOUTUBE"; PlayYTBtn.BackgroundColor3 = Color3.fromRGB(40, 20, 20); PlayYTBtn.TextColor3 = Color3.new(1, 1, 1); PlayYTBtn.Font = Enum.Font.SciFi; PlayYTBtn.TextSize = 16; style(PlayYTBtn)
 
-local VolumeSlider = Instance.new("TextBox", PageMusic); VolumeSlider.Size = UDim2.new(1, 0, 0, 40); VolumeSlider.PlaceholderText = "VOLUME (0-10)"; VolumeSlider.Text = "5"; VolumeSlider.BackgroundColor3 = Color3.fromRGB(20, 20, 20); VolumeSlider.TextColor3 = Color3.new(1, 1, 1); style(VolumeSlider)
+local SearchBox = Instance.new("TextBox", PageMusic); SearchBox.Size = UDim2.new(1, 0, 0, 40); SearchBox.PlaceholderText = "SEARCH MUSIC NAME"; SearchBox.Text = ""; SearchBox.BackgroundColor3 = Color3.fromRGB(20, 20, 20); SearchBox.TextColor3 = Color3.new(1, 1, 1); SearchBox.Font = Enum.Font.SciFi; SearchBox.TextSize = 16; style(SearchBox)
+
+local SearchBtn = Instance.new("TextButton", PageMusic); SearchBtn.Size = UDim2.new(1, 0, 0, 40); SearchBtn.Text = "🔍 SEARCH MUSIC"; SearchBtn.BackgroundColor3 = Color3.fromRGB(20, 20, 40); SearchBtn.TextColor3 = Color3.new(1, 1, 1); SearchBtn.Font = Enum.Font.SciFi; SearchBtn.TextSize = 16; style(SearchBtn)
+
+local StopMusicBtn = Instance.new("TextButton", PageMusic); StopMusicBtn.Size = UDim2.new(1, 0, 0, 40); StopMusicBtn.Text = "⏹ STOP MUSIC"; StopMusicBtn.BackgroundColor3 = Color3.fromRGB(40, 10, 10); StopMusicBtn.TextColor3 = Color3.new(1, 1, 1); StopMusicBtn.Font = Enum.Font.SciFi; StopMusicBtn.TextSize = 16; style(StopMusicBtn)
+
+local VolumeSlider = Instance.new("TextBox", PageMusic); VolumeSlider.Size = UDim2.new(1, 0, 0, 40); VolumeSlider.PlaceholderText = "VOLUME (0-10)"; VolumeSlider.Text = "5"; VolumeSlider.BackgroundColor3 = Color3.fromRGB(20, 20, 20); VolumeSlider.TextColor3 = Color3.new(1, 1, 1); VolumeSlider.Font = Enum.Font.SciFi; VolumeSlider.TextSize = 16; style(VolumeSlider)
 
 -- FLY BUTTONS
 local btnUp = Instance.new("TextButton", PageWorld); btnUp.Size = UDim2.new(0.45, 0, 0, 40); btnUp.Position = UDim2.new(0, 0, 0.6, 0); btnUp.Text = "FLY UP"; btnUp.BackgroundColor3 = Color3.fromRGB(20,20,20); btnUp.TextColor3 = Color3.new(1,1,1); style(btnUp)
@@ -283,26 +287,55 @@ end
 
 -- [[ MUSIC FUNCTIONS ]] --
 local function PlayMusic(audioId, title)
-    if CurrentSound then CurrentSound:Stop(); CurrentSound:Destroy(); CurrentSound = nil end
-    CurrentSound = Instance.new("Sound", workspace)
-    CurrentSound.SoundId = "rbxassetid://" .. audioId
+    if CurrentSound then 
+        CurrentSound:Stop()
+        CurrentSound:Destroy()
+        CurrentSound = nil 
+    end
+    
+    local char = Player.Character
+    if not char or not char:FindFirstChild("HumanoidRootPart") then
+        Notify("ERROR: NO CHARACTER")
+        return
+    end
+    
+    CurrentSound = Instance.new("Sound")
+    CurrentSound.Parent = char.HumanoidRootPart
+    CurrentSound.SoundId = "rbxassetid://" .. tostring(audioId)
     CurrentSound.Volume = tonumber(VolumeSlider.Text) or 5
     CurrentSound.Looped = true
-    CurrentSound:Play()
-    MusicPlaying = true
-    MusicTitle.Text = title or "MUSIC"
-    MusicStatus.Text = "PLAYING"
-    MusicWidget.Visible = true
-    BtnPlayPause.Text = "PAUSE"
-    Notify("MUSIC STARTED")
+    CurrentSound.Playing = true
+    
+    local success = pcall(function()
+        CurrentSound:Play()
+    end)
+    
+    if success then
+        MusicPlaying = true
+        MusicTitle.Text = title or ("ID: " .. tostring(audioId))
+        MusicStatus.Text = "♪ PLAYING"
+        MusicWidget.Visible = true
+        BtnPlayPause.Text = "⏸"
+        Notify("MUSIC: " .. (title or tostring(audioId)))
+    else
+        Notify("ERROR: INVALID AUDIO ID")
+        if CurrentSound then
+            CurrentSound:Destroy()
+            CurrentSound = nil
+        end
+    end
 end
 
 local function StopMusic()
-    if CurrentSound then CurrentSound:Stop(); CurrentSound:Destroy(); CurrentSound = nil end
+    if CurrentSound then 
+        CurrentSound:Stop()
+        CurrentSound:Destroy()
+        CurrentSound = nil 
+    end
     MusicPlaying = false
     MusicTitle.Text = "NO MUSIC"
-    MusicStatus.Text = "STOPPED"
-    BtnPlayPause.Text = "PLAY"
+    MusicStatus.Text = "⏹ STOPPED"
+    BtnPlayPause.Text = "▶"
     Notify("MUSIC STOPPED")
 end
 
@@ -311,45 +344,131 @@ local function TogglePlayPause()
     if MusicPlaying then
         CurrentSound:Pause()
         MusicPlaying = false
-        MusicStatus.Text = "PAUSED"
-        BtnPlayPause.Text = "PLAY"
+        MusicStatus.Text = "⏸ PAUSED"
+        BtnPlayPause.Text = "▶"
     else
         CurrentSound:Resume()
         MusicPlaying = true
-        MusicStatus.Text = "PLAYING"
-        BtnPlayPause.Text = "PAUSE"
+        MusicStatus.Text = "♪ PLAYING"
+        BtnPlayPause.Text = "⏸"
     end
 end
 
-PlayIDBtn.MouseButton1Click:Connect(function()
-    local id = MusicIDBox.Text
-    if id ~= "" then
-        PlayMusic(id, "ID: " .. id)
+local function ExtractYouTubeID(link)
+    local patterns = {
+        "youtube%.com/watch%?v=([%w-_]+)",
+        "youtu%.be/([%w-_]+)",
+        "youtube%.com/embed/([%w-_]+)",
+        "youtube%.com/v/([%w-_]+)"
+    }
+    
+    for _, pattern in ipairs(patterns) do
+        local id = string.match(link, pattern)
+        if id then return id end
     end
-end)
+    
+    if string.match(link, "^[%w-_]+$") and #link == 11 then
+        return link
+    end
+    
+    return nil
+end
 
-StopMusicBtn.MouseButton1Click:Connect(function() StopMusic() end)
-BtnPlayPause.MouseButton1Click:Connect(function() TogglePlayPause() end)
-BtnStop.MouseButton1Click:Connect(function() StopMusic() end)
+local function SearchYouTubeToRoblox(query)
+    Notify("SEARCHING: " .. query)
+    task.spawn(function()
+        if request then
+            local success, response = pcall(function()
+                return request({
+                    Url = "https://www.roblox.com/audio/search?Keyword=" .. HttpService:UrlEncode(query),
+                    Method = "GET"
+                })
+            end)
+            
+            if success and response and response.Body then
+                local audioId = string.match(response.Body, 'data%-item%-id="(%d+)"')
+                if audioId then
+                    PlayMusic(audioId, query)
+                else
+                    Notify("NO RESULTS FOUND")
+                end
+            else
+                Notify("SEARCH FAILED")
+            end
+        else
+            Notify("HTTP NOT AVAILABLE")
+        end
+    end)
+end
 
-VolumeSlider.FocusLost:Connect(function()
-    local vol = tonumber(VolumeSlider.Text)
-    if vol and CurrentSound then
-        CurrentSound.Volume = math.clamp(vol, 0, 10)
+PlayIDBtn.MouseButton1Click:Connect(function()
+    local id = MusicIDBox.Text:gsub("%s+", "")
+    if id ~= "" then
+        local numericId = id:match("%d+")
+        if numericId then
+            PlayMusic(numericId, "Custom Audio")
+        else
+            Notify("INVALID ID FORMAT")
+        end
+    else
+        Notify("ENTER AUDIO ID")
     end
 end)
 
 PlayYTBtn.MouseButton1Click:Connect(function()
-    local link = YouTubeLinkBox.Text
+    local link = YouTubeLinkBox.Text:gsub("%s+", "")
     if link ~= "" then
-        Notify("YT CONVERSION NOT AVAILABLE")
+        local ytId = ExtractYouTubeID(link)
+        if ytId then
+            Notify("YT ID: " .. ytId)
+            SearchYouTubeToRoblox(ytId)
+        else
+            Notify("INVALID YOUTUBE LINK")
+        end
+    else
+        Notify("ENTER YOUTUBE LINK")
     end
 end)
 
 SearchBtn.MouseButton1Click:Connect(function()
-    local query = SearchBox.Text
+    local query = SearchBox.Text:gsub("%s+", " "):gsub("^%s*(.-)%s*$", "%1")
     if query ~= "" then
-        Notify("MUSIC SEARCH NOT AVAILABLE")
+        SearchYouTubeToRoblox(query)
+    else
+        Notify("ENTER SEARCH QUERY")
+    end
+end)
+
+StopMusicBtn.MouseButton1Click:Connect(function() 
+    StopMusic() 
+end)
+
+BtnPlayPause.MouseButton1Click:Connect(function() 
+    TogglePlayPause() 
+end)
+
+BtnStop.MouseButton1Click:Connect(function() 
+    StopMusic() 
+end)
+
+BtnSkip.MouseButton1Click:Connect(function()
+    if CurrentSound then
+        CurrentSound.TimePosition = 0
+        Notify("MUSIC RESTARTED")
+    end
+end)
+
+VolumeSlider.FocusLost:Connect(function()
+    local vol = tonumber(VolumeSlider.Text)
+    if vol then
+        vol = math.clamp(vol, 0, 10)
+        VolumeSlider.Text = tostring(vol)
+        if CurrentSound then
+            CurrentSound.Volume = vol
+            Notify("VOLUME: " .. tostring(vol))
+        end
+    else
+        VolumeSlider.Text = "5"
     end
 end)
 
@@ -472,11 +591,18 @@ AmbientBtn.MouseButton1Click:Connect(function()
 end)
 local function SetSky(id)
     local sky = Lighting:FindFirstChildOfClass("Sky") or Instance.new("Sky", Lighting)
-    local tex = "rbxassetid://" .. id
+    local tex = "rbxassetid://" .. tostring(id)
     sky.SkyboxBk, sky.SkyboxDn, sky.SkyboxFt, sky.SkyboxLf, sky.SkyboxRt, sky.SkyboxUp = tex, tex, tex, tex, tex, tex
-    Notify("CUSTOM SKY APPLIED")
+    Notify("CUSTOM SKY: " .. tostring(id))
 end
-SetSkyBtn.MouseButton1Click:Connect(function() if SkyBox.Text ~= "" then SetSky(SkyBox.Text) end end)
+SetSkyBtn.MouseButton1Click:Connect(function() 
+    local id = SkyBox.Text:gsub("%s+", ""):match("%d+")
+    if id then 
+        SetSky(id) 
+    else
+        Notify("INVALID SKY ID")
+    end
+end)
 SpaceSkyBtn.MouseButton1Click:Connect(function() SetSky("159454299") end) 
 
 -- [[ MACRO LOGIC (FIXED) ]] --
@@ -661,8 +787,8 @@ local function CreateESPLine(player)
     local line = Drawing.new("Line")
     line.Visible = false
     line.Color = Color3.new(1, 1, 1)
-    line.Thickness = 1
-    line.Transparency = 1
+    line.Thickness = 2
+    line.Transparency = 0.8
     ESPLines[player] = line
 end
 
