@@ -1,4 +1,4 @@
--- [[ ⛧ AngerPC ⛧ V127 GROQ-MUSIC ]] --
+-- [[ ⛧ AngerPC ⛧ V127 GROQ-MUSIC + KEY SYSTEM ]] --
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -18,23 +18,228 @@ local Player = Players.LocalPlayer
 local request = (syn and syn.request) or (http and http.request) or http_request or (fluxus and fluxus.request) or request
 local getcustomasset = getcustomasset or getsynasset
 
+-- ================================================================
+-- [[ ⛧ KEY SYSTEM ⛧ ]]
+-- ================================================================
+
+local KEY_JSON_URL  = "https://raw.githubusercontent.com/AngerPC-DEV/AngerMOD/main/key.json"
+local KEY_SAVE_FILE = "AngerMOD_key.txt"
+
+local function GetKeyDuration(keyData)
+    local days  = tonumber(keyData["time"]) or 0
+    local hours = tonumber(keyData["time-hours"]) or 0
+    if days > 0 then return days * 86400
+    elseif hours > 0 then return hours * 3600 end
+    return 0
+end
+
+local function ValidateKey(inputKey)
+    if not request then return false, "HTTP недоступен", nil end
+    local ok, response = pcall(function()
+        return request({ Url = KEY_JSON_URL, Method = "GET" })
+    end)
+    if not ok or not response or response.StatusCode ~= 200 then
+        return false, "Не удалось загрузить базу ключей", nil
+    end
+    local parsed, keys = pcall(function() return HttpService:JSONDecode(response.Body) end)
+    if not parsed or type(keys) ~= "table" then
+        return false, "Ошибка парсинга key.json", nil
+    end
+    for _, keyData in ipairs(keys) do
+        if type(keyData) == "table" and keyData["key"] == inputKey then
+            local activations = tonumber(keyData["activate"]) or 0
+            if activations <= 0 then return false, "Ключ исчерпал лимит активаций", nil end
+            return true, "OK", keyData
+        end
+    end
+    return false, "Неверный ключ", nil
+end
+
+local function SaveKey(key)
+    if writefile then pcall(function() writefile(KEY_SAVE_FILE, key) end) end
+end
+
+local function LoadSavedKey()
+    if readfile and isfile and isfile(KEY_SAVE_FILE) then
+        local ok, val = pcall(function() return readfile(KEY_SAVE_FILE) end)
+        if ok and val and val ~= "" then return val end
+    end
+    return nil
+end
+
+local function FormatTime(seconds)
+    if seconds >= 86400 then return math.floor(seconds / 86400) .. " дн."
+    elseif seconds >= 3600 then return math.floor(seconds / 3600) .. " ч."
+    elseif seconds >= 60 then return math.floor(seconds / 60) .. " мин."
+    else return seconds .. " сек." end
+end
+
+-- [[ LOGIN GUI ]] --
+local LoginGui = Instance.new("ScreenGui")
+LoginGui.Name = "AngerMOD_Login"
+LoginGui.ResetOnSpawn = false
+LoginGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+if Player:FindFirstChild("PlayerGui") then LoginGui.Parent = Player.PlayerGui
+else LoginGui.Parent = game:GetService("CoreGui") end
+
+local Overlay = Instance.new("Frame", LoginGui)
+Overlay.Size = UDim2.new(1, 0, 1, 0); Overlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+Overlay.BackgroundTransparency = 0.4; Overlay.BorderSizePixel = 0; Overlay.ZIndex = 1
+
+local LoginFrame = Instance.new("Frame", LoginGui)
+LoginFrame.Size = UDim2.new(0, 380, 0, 270); LoginFrame.Position = UDim2.new(0.5, -190, 0.5, -135)
+LoginFrame.BackgroundColor3 = Color3.fromRGB(10, 10, 10); LoginFrame.BorderSizePixel = 0
+LoginFrame.ZIndex = 2; LoginFrame.Active = true; LoginFrame.Draggable = true
+
+local function lc(obj, r) Instance.new("UICorner", obj).CornerRadius = UDim.new(0, r or 8) end
+local function ls(obj, c, t) local s = Instance.new("UIStroke", obj); s.Color = c or Color3.fromRGB(180,0,0); s.Thickness = t or 2 end
+lc(LoginFrame, 10); ls(LoginFrame, Color3.fromRGB(180, 0, 0), 2)
+
+local LoginTitle = Instance.new("TextLabel", LoginFrame)
+LoginTitle.Size = UDim2.new(1, 0, 0, 50); LoginTitle.BackgroundTransparency = 1
+LoginTitle.Text = "⛧ AngerPC KEY SYSTEM ⛧"; LoginTitle.TextColor3 = Color3.fromRGB(255, 40, 40)
+LoginTitle.Font = Enum.Font.SciFi; LoginTitle.TextSize = 20; LoginTitle.ZIndex = 3
+
+local LoginSub = Instance.new("TextLabel", LoginFrame)
+LoginSub.Size = UDim2.new(1, -20, 0, 20); LoginSub.Position = UDim2.new(0, 10, 0, 48)
+LoginSub.BackgroundTransparency = 1; LoginSub.Text = "Введите ваш ключ для продолжения"
+LoginSub.TextColor3 = Color3.fromRGB(150, 150, 150); LoginSub.Font = Enum.Font.SciFi
+LoginSub.TextSize = 13; LoginSub.ZIndex = 3
+
+local KeyBox = Instance.new("TextBox", LoginFrame)
+KeyBox.Size = UDim2.new(1, -30, 0, 42); KeyBox.Position = UDim2.new(0, 15, 0, 76)
+KeyBox.BackgroundColor3 = Color3.fromRGB(20, 20, 20); KeyBox.PlaceholderText = "AngerMOD-XXXX-XXXXXXXXXX"
+KeyBox.Text = ""; KeyBox.TextColor3 = Color3.new(1, 1, 1); KeyBox.PlaceholderColor3 = Color3.fromRGB(70, 70, 70)
+KeyBox.Font = Enum.Font.SciFi; KeyBox.TextSize = 15; KeyBox.ClearTextOnFocus = false; KeyBox.ZIndex = 3
+lc(KeyBox, 6); ls(KeyBox, Color3.fromRGB(60, 60, 60), 1)
+
+local StatusLabel = Instance.new("TextLabel", LoginFrame)
+StatusLabel.Size = UDim2.new(1, -20, 0, 28); StatusLabel.Position = UDim2.new(0, 10, 0, 126)
+StatusLabel.BackgroundTransparency = 1; StatusLabel.Text = ""
+StatusLabel.TextColor3 = Color3.fromRGB(200, 200, 200); StatusLabel.Font = Enum.Font.SciFi
+StatusLabel.TextSize = 13; StatusLabel.ZIndex = 3; StatusLabel.TextWrapped = true
+
+local ActivateBtn = Instance.new("TextButton", LoginFrame)
+ActivateBtn.Size = UDim2.new(1, -30, 0, 44); ActivateBtn.Position = UDim2.new(0, 15, 0, 162)
+ActivateBtn.BackgroundColor3 = Color3.fromRGB(150, 0, 0); ActivateBtn.Text = "АКТИВИРОВАТЬ"
+ActivateBtn.TextColor3 = Color3.new(1, 1, 1); ActivateBtn.Font = Enum.Font.SciFi
+ActivateBtn.TextSize = 18; ActivateBtn.ZIndex = 3
+lc(ActivateBtn, 6); ls(ActivateBtn, Color3.fromRGB(255, 50, 50), 1)
+
+local GithubBtn = Instance.new("TextButton", LoginFrame)
+GithubBtn.Size = UDim2.new(1, -30, 0, 24); GithubBtn.Position = UDim2.new(0, 15, 0, 218)
+GithubBtn.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
+GithubBtn.Text = "🔑 Получить ключ: github.com/AngerPC-DEV/AngerMOD"
+GithubBtn.TextColor3 = Color3.fromRGB(100, 180, 255); GithubBtn.Font = Enum.Font.SciFi
+GithubBtn.TextSize = 11; GithubBtn.ZIndex = 3
+lc(GithubBtn, 6); ls(GithubBtn, Color3.fromRGB(40, 80, 140), 1)
+
+local LoaderLabel = Instance.new("TextLabel", LoginFrame)
+LoaderLabel.Size = UDim2.new(1, 0, 0, 28); LoaderLabel.Position = UDim2.new(0, 0, 0, 126)
+LoaderLabel.BackgroundTransparency = 1; LoaderLabel.Text = ""
+LoaderLabel.TextColor3 = Color3.fromRGB(255, 100, 100); LoaderLabel.Font = Enum.Font.SciFi
+LoaderLabel.TextSize = 14; LoaderLabel.ZIndex = 4; LoaderLabel.Visible = false
+
+local isChecking = false
+
+local function SetStatus(text, color)
+    StatusLabel.Text = text; StatusLabel.TextColor3 = color or Color3.new(1, 1, 1)
+end
+
+local function ShowLoader(show)
+    LoaderLabel.Visible = show; StatusLabel.Visible = not show
+    if show then
+        task.spawn(function()
+            local frames = {"|", "/", "—", "\\"}; local i = 1
+            while LoaderLabel.Visible do
+                LoaderLabel.Text = "⟳ Проверка ключа " .. frames[i]
+                i = i % #frames + 1; task.wait(0.15)
+            end
+        end)
+    end
+end
+
+-- Функция запуска основного мода (определена ниже как forward-reference)
+local StartAngerMOD
+
+local function OnActivate()
+    if isChecking then return end
+    local key = KeyBox.Text:gsub("%s+", "")
+    if key == "" then SetStatus("⚠ Введите ключ!", Color3.fromRGB(255, 200, 0)); return end
+
+    isChecking = true; ShowLoader(true)
+    ActivateBtn.Active = false; ActivateBtn.BackgroundColor3 = Color3.fromRGB(60, 0, 0)
+
+    task.spawn(function()
+        local valid, msg, keyData = ValidateKey(key)
+        ShowLoader(false); isChecking = false
+        ActivateBtn.Active = true; ActivateBtn.BackgroundColor3 = Color3.fromRGB(150, 0, 0)
+
+        if valid then
+            local duration = GetKeyDuration(keyData)
+            local timeStr = duration > 0 and ("Действует: " .. FormatTime(duration)) or "Постоянный"
+            SetStatus("✅ Ключ принят! " .. timeStr, Color3.fromRGB(0, 255, 80))
+            SaveKey(key)
+            task.wait(1.2)
+            TweenService:Create(LoginFrame, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+                Position = UDim2.new(0.5, -190, -0.6, 0), BackgroundTransparency = 1
+            }):Play()
+            TweenService:Create(Overlay, TweenInfo.new(0.5), {BackgroundTransparency = 1}):Play()
+            task.wait(0.6)
+            LoginGui:Destroy()
+            StartAngerMOD()
+        else
+            SetStatus("❌ " .. (msg or "Неверный ключ"), Color3.fromRGB(255, 60, 60))
+            task.spawn(function()
+                for _ = 1, 4 do
+                    LoginFrame.Position = UDim2.new(0.5, -190 + 7, 0.5, -135); task.wait(0.05)
+                    LoginFrame.Position = UDim2.new(0.5, -190 - 7, 0.5, -135); task.wait(0.05)
+                end
+                LoginFrame.Position = UDim2.new(0.5, -190, 0.5, -135)
+            end)
+        end
+    end)
+end
+
+ActivateBtn.MouseButton1Click:Connect(OnActivate)
+KeyBox.FocusLost:Connect(function(enter) if enter then OnActivate() end end)
+GithubBtn.MouseButton1Click:Connect(function()
+    SetStatus("🔑 github.com/AngerPC-DEV/AngerMOD → key.json", Color3.fromRGB(100, 180, 255))
+end)
+
+-- Анимация появления логина
+LoginFrame.Position = UDim2.new(0.5, -190, -0.6, 0)
+TweenService:Create(LoginFrame, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+    Position = UDim2.new(0.5, -190, 0.5, -135)
+}):Play()
+
+-- Автологин
+task.spawn(function()
+    local savedKey = LoadSavedKey()
+    if savedKey and savedKey ~= "" then
+        KeyBox.Text = savedKey
+        SetStatus("⟳ Проверка сохранённого ключа...", Color3.fromRGB(200, 200, 200))
+        task.wait(0.9)
+        OnActivate()
+    end
+end)
+
+-- ================================================================
+-- [[ ⛧ ОСНОВНОЙ МОД ]] — запускается после успешного логина
+-- ================================================================
+
+StartAngerMOD = function()
+
 -- [[ SESSION INFO ]] --
 local SessionID = string.upper(HttpService:GenerateGUID(false):sub(1, 8))
 
 -- [[ MEMORY SYSTEM (AI) ]] --
 local ChatHistory = {
-    {
-        role = "system",
-        content = "Ты — AngerPC, крутой ИИ-бот в Roblox. Создатель: AngerPC-DEV. Характер: дерзкий, краткий."
-    }
+    { role = "system", content = "Ты — AngerPC, крутой ИИ-бот в Roblox. Создатель: AngerPC-DEV. Характер: дерзкий, краткий." }
 }
 
 -- [[ GROQ MODELS ]] --
-local GroqModels = {
-    "llama-3.3-70b-versatile",
-    "llama-3.1-70b-versatile", 
-    "deepseek-r1-distill-llama-70b"
-}
+local GroqModels = { "llama-3.3-70b-versatile", "llama-3.1-70b-versatile", "deepseek-r1-distill-llama-70b" }
 local CurrentModelIndex = 1
 
 -- [[ THEME SYSTEM ]] --
@@ -45,7 +250,7 @@ local ThemeColors = {
     ["НЕОБЫЧНЫЙ"] = Color3.fromRGB(255, 170, 0), ["РОЗОВЫЙ"] = Color3.fromRGB(255, 105, 180),
     ["КРАСНЫЙ"] = Color3.fromRGB(255, 0, 0)
 }
-local CurrentThemeIndex = 1 
+local CurrentThemeIndex = 1
 
 -- [[ MUSIC SYSTEM ]] --
 local CurrentSound = nil
@@ -53,14 +258,9 @@ local MusicPlaying = false
 
 -- [[ 1. GUI SETUP ]] --
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "AngerGUI_V127"
-ScreenGui.ResetOnSpawn = false 
-
-if Player:FindFirstChild("PlayerGui") then
-    ScreenGui.Parent = Player.PlayerGui
-else
-    ScreenGui.Parent = game:GetService("CoreGui")
-end
+ScreenGui.Name = "AngerGUI_V127"; ScreenGui.ResetOnSpawn = false
+if Player:FindFirstChild("PlayerGui") then ScreenGui.Parent = Player.PlayerGui
+else ScreenGui.Parent = game:GetService("CoreGui") end
 
 -- DEATH SCREEN
 local DeathScreen = Instance.new("ScreenGui", ScreenGui.Parent)
@@ -68,10 +268,10 @@ DeathScreen.Name = "AngerDeath"; DeathScreen.Enabled = false
 local DeathLabel = Instance.new("TextLabel", DeathScreen); DeathLabel.Size = UDim2.new(1, 0, 1, 0); DeathLabel.BackgroundTransparency = 1; DeathLabel.Text = "WASTED"; DeathLabel.Font = Enum.Font.Creepster; DeathLabel.TextSize = 100; DeathLabel.TextColor3 = Color3.fromRGB(255, 0, 0); DeathLabel.TextStrokeTransparency = 0
 
 -- LISTS & VARS
-local RGB_Objects = {} 
-local Movable_Objects = {} 
+local RGB_Objects = {}
+local Movable_Objects = {}
 local RecordedPath = {}
-local UI_Unlocked = false 
+local UI_Unlocked = false
 local ESPLines = {}
 
 local function style(obj, radius, thickness)
@@ -83,112 +283,33 @@ end
 
 -- [[ NOTIFICATION SYSTEM ]] --
 local NotifyContainer = Instance.new("Frame", ScreenGui)
-NotifyContainer.Size = UDim2.new(0, 250, 0.4, 0)
-NotifyContainer.Position = UDim2.new(1, -260, 0.55, 0)
-NotifyContainer.BackgroundTransparency = 1
+NotifyContainer.Size = UDim2.new(0, 250, 0.4, 0); NotifyContainer.Position = UDim2.new(1, -260, 0.55, 0); NotifyContainer.BackgroundTransparency = 1
 local NotifyLayout = Instance.new("UIListLayout", NotifyContainer)
-NotifyLayout.SortOrder = Enum.SortOrder.LayoutOrder
-NotifyLayout.VerticalAlignment = Enum.VerticalAlignment.Bottom
-NotifyLayout.Padding = UDim.new(0, 5)
+NotifyLayout.SortOrder = Enum.SortOrder.LayoutOrder; NotifyLayout.VerticalAlignment = Enum.VerticalAlignment.Bottom; NotifyLayout.Padding = UDim.new(0, 5)
 
 local function Notify(text)
-    local f = Instance.new("Frame", NotifyContainer)
-    f.Size = UDim2.new(1, 0, 0, 35)
-    f.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-    f.BackgroundTransparency = 0.2
-    style(f, 4, 1)
-    
-    local l = Instance.new("TextLabel", f)
-    l.Size = UDim2.new(1, -10, 1, 0)
-    l.Position = UDim2.new(0, 5, 0, 0)
-    l.BackgroundTransparency = 1
-    l.Text = text
-    l.TextColor3 = Color3.new(1, 1, 1)
-    l.Font = Enum.Font.SciFi
-    l.TextSize = 14
-    l.TextXAlignment = Enum.TextXAlignment.Left
-    
-    f.BackgroundTransparency = 1
-    l.TextTransparency = 1
+    local f = Instance.new("Frame", NotifyContainer); f.Size = UDim2.new(1, 0, 0, 35); f.BackgroundColor3 = Color3.fromRGB(20, 20, 20); f.BackgroundTransparency = 0.2; style(f, 4, 1)
+    local l = Instance.new("TextLabel", f); l.Size = UDim2.new(1, -10, 1, 0); l.Position = UDim2.new(0, 5, 0, 0); l.BackgroundTransparency = 1; l.Text = text; l.TextColor3 = Color3.new(1, 1, 1); l.Font = Enum.Font.SciFi; l.TextSize = 14; l.TextXAlignment = Enum.TextXAlignment.Left
+    f.BackgroundTransparency = 1; l.TextTransparency = 1
     TweenService:Create(f, TweenInfo.new(0.3), {BackgroundTransparency = 0.2}):Play()
     TweenService:Create(l, TweenInfo.new(0.3), {TextTransparency = 0}):Play()
-    
     task.delay(3, function()
         TweenService:Create(f, TweenInfo.new(0.5), {BackgroundTransparency = 1}):Play()
         TweenService:Create(l, TweenInfo.new(0.5), {TextTransparency = 1}):Play()
-        task.wait(0.5)
-        f:Destroy()
+        task.wait(0.5); f:Destroy()
     end)
 end
 
 -- // MUSIC WIDGET // --
 local MusicWidget = Instance.new("Frame", ScreenGui)
-MusicWidget.Size = UDim2.new(0, 200, 0, 120)
-MusicWidget.Position = UDim2.new(1, -210, 1, -130)
-MusicWidget.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
-MusicWidget.Visible = false
-MusicWidget.Active = true
-MusicWidget.Draggable = true
-style(MusicWidget, 8, 2)
-table.insert(Movable_Objects, MusicWidget)
+MusicWidget.Size = UDim2.new(0, 200, 0, 120); MusicWidget.Position = UDim2.new(1, -210, 1, -130); MusicWidget.BackgroundColor3 = Color3.fromRGB(15, 15, 15); MusicWidget.Visible = false; MusicWidget.Active = true; MusicWidget.Draggable = true; style(MusicWidget, 8, 2); table.insert(Movable_Objects, MusicWidget)
 
-local MusicIcon = Instance.new("ImageLabel", MusicWidget)
-MusicIcon.Size = UDim2.new(0, 50, 0, 50)
-MusicIcon.Position = UDim2.new(0, 10, 0, 10)
-MusicIcon.BackgroundTransparency = 1
-MusicIcon.Image = "rbxassetid://6031265976"
-table.insert(RGB_Objects, {Type = "Image", Instance = MusicIcon})
-
-local MusicTitle = Instance.new("TextLabel", MusicWidget)
-MusicTitle.Size = UDim2.new(1, -70, 0, 25)
-MusicTitle.Position = UDim2.new(0, 65, 0, 10)
-MusicTitle.BackgroundTransparency = 1
-MusicTitle.Text = "NO MUSIC"
-MusicTitle.TextColor3 = Color3.new(1, 1, 1)
-MusicTitle.Font = Enum.Font.SciFi
-MusicTitle.TextSize = 14
-MusicTitle.TextXAlignment = Enum.TextXAlignment.Left
-MusicTitle.TextScaled = true
-
-local MusicStatus = Instance.new("TextLabel", MusicWidget)
-MusicStatus.Size = UDim2.new(1, -70, 0, 20)
-MusicStatus.Position = UDim2.new(0, 65, 0, 35)
-MusicStatus.BackgroundTransparency = 1
-MusicStatus.Text = "IDLE"
-MusicStatus.TextColor3 = Color3.fromRGB(150, 150, 150)
-MusicStatus.Font = Enum.Font.SciFi
-MusicStatus.TextSize = 12
-MusicStatus.TextXAlignment = Enum.TextXAlignment.Left
-
-local BtnPlayPause = Instance.new("TextButton", MusicWidget)
-BtnPlayPause.Size = UDim2.new(0.3, -5, 0, 30)
-BtnPlayPause.Position = UDim2.new(0, 10, 1, -40)
-BtnPlayPause.Text = "PLAY"
-BtnPlayPause.BackgroundColor3 = Color3.fromRGB(20, 40, 20)
-BtnPlayPause.TextColor3 = Color3.new(1, 1, 1)
-BtnPlayPause.Font = Enum.Font.SciFi
-BtnPlayPause.TextSize = 12
-style(BtnPlayPause)
-
-local BtnStop = Instance.new("TextButton", MusicWidget)
-BtnStop.Size = UDim2.new(0.3, -5, 0, 30)
-BtnStop.Position = UDim2.new(0.35, 0, 1, -40)
-BtnStop.Text = "STOP"
-BtnStop.BackgroundColor3 = Color3.fromRGB(40, 20, 20)
-BtnStop.TextColor3 = Color3.new(1, 1, 1)
-BtnStop.Font = Enum.Font.SciFi
-BtnStop.TextSize = 12
-style(BtnStop)
-
-local BtnSkip = Instance.new("TextButton", MusicWidget)
-BtnSkip.Size = UDim2.new(0.3, -5, 0, 30)
-BtnSkip.Position = UDim2.new(0.7, 0, 1, -40)
-BtnSkip.Text = "SKIP"
-BtnSkip.BackgroundColor3 = Color3.fromRGB(20, 20, 40)
-BtnSkip.TextColor3 = Color3.new(1, 1, 1)
-BtnSkip.Font = Enum.Font.SciFi
-BtnSkip.TextSize = 12
-style(BtnSkip)
+local MusicIcon = Instance.new("ImageLabel", MusicWidget); MusicIcon.Size = UDim2.new(0, 50, 0, 50); MusicIcon.Position = UDim2.new(0, 10, 0, 10); MusicIcon.BackgroundTransparency = 1; MusicIcon.Image = "rbxassetid://6031265976"; table.insert(RGB_Objects, {Type = "Image", Instance = MusicIcon})
+local MusicTitle = Instance.new("TextLabel", MusicWidget); MusicTitle.Size = UDim2.new(1, -70, 0, 25); MusicTitle.Position = UDim2.new(0, 65, 0, 10); MusicTitle.BackgroundTransparency = 1; MusicTitle.Text = "NO MUSIC"; MusicTitle.TextColor3 = Color3.new(1, 1, 1); MusicTitle.Font = Enum.Font.SciFi; MusicTitle.TextSize = 14; MusicTitle.TextXAlignment = Enum.TextXAlignment.Left; MusicTitle.TextScaled = true
+local MusicStatus = Instance.new("TextLabel", MusicWidget); MusicStatus.Size = UDim2.new(1, -70, 0, 20); MusicStatus.Position = UDim2.new(0, 65, 0, 35); MusicStatus.BackgroundTransparency = 1; MusicStatus.Text = "IDLE"; MusicStatus.TextColor3 = Color3.fromRGB(150, 150, 150); MusicStatus.Font = Enum.Font.SciFi; MusicStatus.TextSize = 12; MusicStatus.TextXAlignment = Enum.TextXAlignment.Left
+local BtnPlayPause = Instance.new("TextButton", MusicWidget); BtnPlayPause.Size = UDim2.new(0.3, -5, 0, 30); BtnPlayPause.Position = UDim2.new(0, 10, 1, -40); BtnPlayPause.Text = "PLAY"; BtnPlayPause.BackgroundColor3 = Color3.fromRGB(20, 40, 20); BtnPlayPause.TextColor3 = Color3.new(1, 1, 1); BtnPlayPause.Font = Enum.Font.SciFi; BtnPlayPause.TextSize = 12; style(BtnPlayPause)
+local BtnStop = Instance.new("TextButton", MusicWidget); BtnStop.Size = UDim2.new(0.3, -5, 0, 30); BtnStop.Position = UDim2.new(0.35, 0, 1, -40); BtnStop.Text = "STOP"; BtnStop.BackgroundColor3 = Color3.fromRGB(40, 20, 20); BtnStop.TextColor3 = Color3.new(1, 1, 1); BtnStop.Font = Enum.Font.SciFi; BtnStop.TextSize = 12; style(BtnStop)
+local BtnSkip = Instance.new("TextButton", MusicWidget); BtnSkip.Size = UDim2.new(0.3, -5, 0, 30); BtnSkip.Position = UDim2.new(0.7, 0, 1, -40); BtnSkip.Text = "SKIP"; BtnSkip.BackgroundColor3 = Color3.fromRGB(20, 20, 40); BtnSkip.TextColor3 = Color3.new(1, 1, 1); BtnSkip.Font = Enum.Font.SciFi; BtnSkip.TextSize = 12; style(BtnSkip)
 
 -- // MAIN MENU // --
 local Main = Instance.new("Frame", ScreenGui); Main.Size = UDim2.new(0, 480, 0, 550); Main.Position = UDim2.new(0.1, 0, 0.2, 0); Main.BackgroundColor3 = Color3.fromRGB(10, 10, 10); Main.Visible = true; Main.Active = true; Main.Draggable = true; style(Main, 8, 2); table.insert(Movable_Objects, Main)
@@ -233,9 +354,7 @@ local SpaceSkyBtn = Instance.new("TextButton", PageWorld); SpaceSkyBtn.Size = UD
 
 -- // AI PAGE // --
 local AIKeyBox = Instance.new("TextBox", PageAI); AIKeyBox.Size = UDim2.new(1, 0, 0, 40); AIKeyBox.Position = UDim2.new(0,0,0,0); AIKeyBox.PlaceholderText = "GROQ API KEY"; AIKeyBox.Text = ""; AIKeyBox.BackgroundColor3 = Color3.fromRGB(20, 20, 20); AIKeyBox.TextColor3 = Color3.new(1, 1, 1); style(AIKeyBox)
-
 local ModelBtn = Instance.new("TextButton", PageAI); ModelBtn.Size = UDim2.new(1, 0, 0, 40); ModelBtn.Position = UDim2.new(0, 0, 0.09, 0); ModelBtn.Text = "MODEL: " .. GroqModels[CurrentModelIndex]; ModelBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30); ModelBtn.TextColor3 = Color3.new(1, 1, 1); ModelBtn.Font = Enum.Font.SciFi; ModelBtn.TextSize = 14; style(ModelBtn)
-
 local AIToggleBtn = Instance.new("TextButton", PageAI); AIToggleBtn.Size = UDim2.new(1, 0, 0, 40); AIToggleBtn.Position = UDim2.new(0, 0, 0.19, 0); AIToggleBtn.Text = "AI AUTOREPLY: OFF"; AIToggleBtn.BackgroundColor3 = Color3.fromRGB(30, 10, 10); AIToggleBtn.TextColor3 = Color3.new(1, 1, 1); style(AIToggleBtn)
 local FriendBtn = Instance.new("TextButton", PageAI); FriendBtn.Size = UDim2.new(1, 0, 0, 40); FriendBtn.Position = UDim2.new(0, 0, 0.29, 0); FriendBtn.Text = "FRIEND BOT: OFF"; FriendBtn.BackgroundColor3 = Color3.fromRGB(30, 10, 10); FriendBtn.TextColor3 = Color3.new(1, 1, 1); style(FriendBtn)
 local RecBtn = Instance.new("TextButton", PageAI); RecBtn.Size = UDim2.new(0.48, 0, 0, 40); RecBtn.Position = UDim2.new(0, 0, 0.49, 0); RecBtn.Text = "RECORD"; RecBtn.BackgroundColor3 = Color3.fromRGB(40, 10, 10); RecBtn.TextColor3 = Color3.new(1, 1, 1); style(RecBtn)
@@ -249,19 +368,12 @@ local SaveBtn = Instance.new("TextButton", PageUI); SaveBtn.Size = UDim2.new(1, 
 
 -- // MUSIC PAGE // --
 local MusicIDBox = Instance.new("TextBox", PageMusic); MusicIDBox.Size = UDim2.new(1, 0, 0, 40); MusicIDBox.PlaceholderText = "ROBLOX AUDIO ID"; MusicIDBox.Text = ""; MusicIDBox.BackgroundColor3 = Color3.fromRGB(20, 20, 20); MusicIDBox.TextColor3 = Color3.new(1, 1, 1); MusicIDBox.Font = Enum.Font.SciFi; MusicIDBox.TextSize = 16; style(MusicIDBox)
-
 local PlayIDBtn = Instance.new("TextButton", PageMusic); PlayIDBtn.Size = UDim2.new(1, 0, 0, 40); PlayIDBtn.Text = "▶ PLAY BY ID"; PlayIDBtn.BackgroundColor3 = Color3.fromRGB(20, 40, 20); PlayIDBtn.TextColor3 = Color3.new(1, 1, 1); PlayIDBtn.Font = Enum.Font.SciFi; PlayIDBtn.TextSize = 16; style(PlayIDBtn)
-
 local YouTubeLinkBox = Instance.new("TextBox", PageMusic); YouTubeLinkBox.Size = UDim2.new(1, 0, 0, 40); YouTubeLinkBox.PlaceholderText = "YOUTUBE LINK OR VIDEO ID"; YouTubeLinkBox.Text = ""; YouTubeLinkBox.BackgroundColor3 = Color3.fromRGB(20, 20, 20); YouTubeLinkBox.TextColor3 = Color3.new(1, 1, 1); YouTubeLinkBox.Font = Enum.Font.SciFi; YouTubeLinkBox.TextSize = 16; style(YouTubeLinkBox)
-
 local PlayYTBtn = Instance.new("TextButton", PageMusic); PlayYTBtn.Size = UDim2.new(1, 0, 0, 40); PlayYTBtn.Text = "🎵 PLAY FROM YOUTUBE"; PlayYTBtn.BackgroundColor3 = Color3.fromRGB(40, 20, 20); PlayYTBtn.TextColor3 = Color3.new(1, 1, 1); PlayYTBtn.Font = Enum.Font.SciFi; PlayYTBtn.TextSize = 16; style(PlayYTBtn)
-
 local SearchBox = Instance.new("TextBox", PageMusic); SearchBox.Size = UDim2.new(1, 0, 0, 40); SearchBox.PlaceholderText = "SEARCH MUSIC NAME"; SearchBox.Text = ""; SearchBox.BackgroundColor3 = Color3.fromRGB(20, 20, 20); SearchBox.TextColor3 = Color3.new(1, 1, 1); SearchBox.Font = Enum.Font.SciFi; SearchBox.TextSize = 16; style(SearchBox)
-
 local SearchBtn = Instance.new("TextButton", PageMusic); SearchBtn.Size = UDim2.new(1, 0, 0, 40); SearchBtn.Text = "🔍 SEARCH MUSIC"; SearchBtn.BackgroundColor3 = Color3.fromRGB(20, 20, 40); SearchBtn.TextColor3 = Color3.new(1, 1, 1); SearchBtn.Font = Enum.Font.SciFi; SearchBtn.TextSize = 16; style(SearchBtn)
-
 local StopMusicBtn = Instance.new("TextButton", PageMusic); StopMusicBtn.Size = UDim2.new(1, 0, 0, 40); StopMusicBtn.Text = "⏹ STOP MUSIC"; StopMusicBtn.BackgroundColor3 = Color3.fromRGB(40, 10, 10); StopMusicBtn.TextColor3 = Color3.new(1, 1, 1); StopMusicBtn.Font = Enum.Font.SciFi; StopMusicBtn.TextSize = 16; style(StopMusicBtn)
-
 local VolumeSlider = Instance.new("TextBox", PageMusic); VolumeSlider.Size = UDim2.new(1, 0, 0, 40); VolumeSlider.PlaceholderText = "VOLUME (0-10)"; VolumeSlider.Text = "5"; VolumeSlider.BackgroundColor3 = Color3.fromRGB(20, 20, 20); VolumeSlider.TextColor3 = Color3.new(1, 1, 1); VolumeSlider.Font = Enum.Font.SciFi; VolumeSlider.TextSize = 16; style(VolumeSlider)
 
 -- FLY BUTTONS
@@ -287,90 +399,38 @@ end
 
 -- [[ MUSIC FUNCTIONS ]] --
 local function PlayMusic(audioId, title)
-    if CurrentSound then 
-        CurrentSound:Stop()
-        CurrentSound:Destroy()
-        CurrentSound = nil 
-    end
-    
+    if CurrentSound then CurrentSound:Stop(); CurrentSound:Destroy(); CurrentSound = nil end
     local char = Player.Character
-    if not char or not char:FindFirstChild("HumanoidRootPart") then
-        Notify("ERROR: NO CHARACTER")
-        return
-    end
-    
-    CurrentSound = Instance.new("Sound")
-    CurrentSound.Parent = char.HumanoidRootPart
-    CurrentSound.SoundId = "rbxassetid://" .. tostring(audioId)
-    CurrentSound.Volume = tonumber(VolumeSlider.Text) or 5
-    CurrentSound.Looped = true
-    CurrentSound.Playing = true
-    
-    local success = pcall(function()
-        CurrentSound:Play()
-    end)
-    
+    if not char or not char:FindFirstChild("HumanoidRootPart") then Notify("ERROR: NO CHARACTER"); return end
+    CurrentSound = Instance.new("Sound"); CurrentSound.Parent = char.HumanoidRootPart
+    CurrentSound.SoundId = "rbxassetid://" .. tostring(audioId); CurrentSound.Volume = tonumber(VolumeSlider.Text) or 5
+    CurrentSound.Looped = true; CurrentSound.Playing = true
+    local success = pcall(function() CurrentSound:Play() end)
     if success then
-        MusicPlaying = true
-        MusicTitle.Text = title or ("ID: " .. tostring(audioId))
-        MusicStatus.Text = "♪ PLAYING"
-        MusicWidget.Visible = true
-        BtnPlayPause.Text = "⏸"
+        MusicPlaying = true; MusicTitle.Text = title or ("ID: " .. tostring(audioId))
+        MusicStatus.Text = "♪ PLAYING"; MusicWidget.Visible = true; BtnPlayPause.Text = "⏸"
         Notify("MUSIC: " .. (title or tostring(audioId)))
     else
         Notify("ERROR: INVALID AUDIO ID")
-        if CurrentSound then
-            CurrentSound:Destroy()
-            CurrentSound = nil
-        end
+        if CurrentSound then CurrentSound:Destroy(); CurrentSound = nil end
     end
 end
 
 local function StopMusic()
-    if CurrentSound then 
-        CurrentSound:Stop()
-        CurrentSound:Destroy()
-        CurrentSound = nil 
-    end
-    MusicPlaying = false
-    MusicTitle.Text = "NO MUSIC"
-    MusicStatus.Text = "⏹ STOPPED"
-    BtnPlayPause.Text = "▶"
-    Notify("MUSIC STOPPED")
+    if CurrentSound then CurrentSound:Stop(); CurrentSound:Destroy(); CurrentSound = nil end
+    MusicPlaying = false; MusicTitle.Text = "NO MUSIC"; MusicStatus.Text = "⏹ STOPPED"; BtnPlayPause.Text = "▶"; Notify("MUSIC STOPPED")
 end
 
 local function TogglePlayPause()
     if not CurrentSound then return end
-    if MusicPlaying then
-        CurrentSound:Pause()
-        MusicPlaying = false
-        MusicStatus.Text = "⏸ PAUSED"
-        BtnPlayPause.Text = "▶"
-    else
-        CurrentSound:Resume()
-        MusicPlaying = true
-        MusicStatus.Text = "♪ PLAYING"
-        BtnPlayPause.Text = "⏸"
-    end
+    if MusicPlaying then CurrentSound:Pause(); MusicPlaying = false; MusicStatus.Text = "⏸ PAUSED"; BtnPlayPause.Text = "▶"
+    else CurrentSound:Resume(); MusicPlaying = true; MusicStatus.Text = "♪ PLAYING"; BtnPlayPause.Text = "⏸" end
 end
 
 local function ExtractYouTubeID(link)
-    local patterns = {
-        "youtube%.com/watch%?v=([%w-_]+)",
-        "youtu%.be/([%w-_]+)",
-        "youtube%.com/embed/([%w-_]+)",
-        "youtube%.com/v/([%w-_]+)"
-    }
-    
-    for _, pattern in ipairs(patterns) do
-        local id = string.match(link, pattern)
-        if id then return id end
-    end
-    
-    if string.match(link, "^[%w-_]+$") and #link == 11 then
-        return link
-    end
-    
+    local patterns = { "youtube%.com/watch%?v=([%w-_]+)", "youtu%.be/([%w-_]+)", "youtube%.com/embed/([%w-_]+)", "youtube%.com/v/([%w-_]+)" }
+    for _, pattern in ipairs(patterns) do local id = string.match(link, pattern); if id then return id end end
+    if string.match(link, "^[%w-_]+$") and #link == 11 then return link end
     return nil
 end
 
@@ -378,124 +438,43 @@ local function SearchYouTubeToRoblox(query)
     Notify("SEARCHING: " .. query)
     task.spawn(function()
         if request then
-            local success, response = pcall(function()
-                return request({
-                    Url = "https://www.roblox.com/audio/search?Keyword=" .. HttpService:UrlEncode(query),
-                    Method = "GET"
-                })
-            end)
-            
+            local success, response = pcall(function() return request({ Url = "https://www.roblox.com/audio/search?Keyword=" .. HttpService:UrlEncode(query), Method = "GET" }) end)
             if success and response and response.Body then
                 local audioId = string.match(response.Body, 'data%-item%-id="(%d+)"')
-                if audioId then
-                    PlayMusic(audioId, query)
-                else
-                    Notify("NO RESULTS FOUND")
-                end
-            else
-                Notify("SEARCH FAILED")
-            end
-        else
-            Notify("HTTP NOT AVAILABLE")
-        end
+                if audioId then PlayMusic(audioId, query) else Notify("NO RESULTS FOUND") end
+            else Notify("SEARCH FAILED") end
+        else Notify("HTTP NOT AVAILABLE") end
     end)
 end
 
 PlayIDBtn.MouseButton1Click:Connect(function()
-    local id = MusicIDBox.Text:gsub("%s+", "")
-    if id ~= "" then
-        local numericId = id:match("%d+")
-        if numericId then
-            PlayMusic(numericId, "Custom Audio")
-        else
-            Notify("INVALID ID FORMAT")
-        end
-    else
-        Notify("ENTER AUDIO ID")
-    end
+    local id = MusicIDBox.Text:gsub("%s+", ""); if id ~= "" then local numericId = id:match("%d+"); if numericId then PlayMusic(numericId, "Custom Audio") else Notify("INVALID ID FORMAT") end else Notify("ENTER AUDIO ID") end
 end)
-
 PlayYTBtn.MouseButton1Click:Connect(function()
-    local link = YouTubeLinkBox.Text:gsub("%s+", "")
-    if link ~= "" then
-        local ytId = ExtractYouTubeID(link)
-        if ytId then
-            Notify("YT ID: " .. ytId)
-            SearchYouTubeToRoblox(ytId)
-        else
-            Notify("INVALID YOUTUBE LINK")
-        end
-    else
-        Notify("ENTER YOUTUBE LINK")
-    end
+    local link = YouTubeLinkBox.Text:gsub("%s+", ""); if link ~= "" then local ytId = ExtractYouTubeID(link); if ytId then Notify("YT ID: " .. ytId); SearchYouTubeToRoblox(ytId) else Notify("INVALID YOUTUBE LINK") end else Notify("ENTER YOUTUBE LINK") end
 end)
-
-SearchBtn.MouseButton1Click:Connect(function()
-    local query = SearchBox.Text:gsub("%s+", " "):gsub("^%s*(.-)%s*$", "%1")
-    if query ~= "" then
-        SearchYouTubeToRoblox(query)
-    else
-        Notify("ENTER SEARCH QUERY")
-    end
-end)
-
-StopMusicBtn.MouseButton1Click:Connect(function() 
-    StopMusic() 
-end)
-
-BtnPlayPause.MouseButton1Click:Connect(function() 
-    TogglePlayPause() 
-end)
-
-BtnStop.MouseButton1Click:Connect(function() 
-    StopMusic() 
-end)
-
-BtnSkip.MouseButton1Click:Connect(function()
-    if CurrentSound then
-        CurrentSound.TimePosition = 0
-        Notify("MUSIC RESTARTED")
-    end
-end)
-
+SearchBtn.MouseButton1Click:Connect(function() local query = SearchBox.Text:gsub("%s+", " "):gsub("^%s*(.-)%s*$", "%1"); if query ~= "" then SearchYouTubeToRoblox(query) else Notify("ENTER SEARCH QUERY") end end)
+StopMusicBtn.MouseButton1Click:Connect(function() StopMusic() end)
+BtnPlayPause.MouseButton1Click:Connect(function() TogglePlayPause() end)
+BtnStop.MouseButton1Click:Connect(function() StopMusic() end)
+BtnSkip.MouseButton1Click:Connect(function() if CurrentSound then CurrentSound.TimePosition = 0; Notify("MUSIC RESTARTED") end end)
 VolumeSlider.FocusLost:Connect(function()
-    local vol = tonumber(VolumeSlider.Text)
-    if vol then
-        vol = math.clamp(vol, 0, 10)
-        VolumeSlider.Text = tostring(vol)
-        if CurrentSound then
-            CurrentSound.Volume = vol
-            Notify("VOLUME: " .. tostring(vol))
-        end
-    else
-        VolumeSlider.Text = "5"
-    end
+    local vol = tonumber(VolumeSlider.Text); if vol then vol = math.clamp(vol, 0, 10); VolumeSlider.Text = tostring(vol); if CurrentSound then CurrentSound.Volume = vol; Notify("VOLUME: " .. tostring(vol)) end else VolumeSlider.Text = "5" end
 end)
 
 -- [[ FIXED REPLAY MOVEMENT ]] --
 local function SmartMove(targetCF)
     local char = Player.Character; if not char then return end
-    local root = char:FindFirstChild("HumanoidRootPart")
-    local hum = char:FindFirstChild("Humanoid")
-    if not root or not hum then return end
-    
+    local root = char:FindFirstChild("HumanoidRootPart"); local hum = char:FindFirstChild("Humanoid"); if not root or not hum then return end
     local car = nil; if hum.SeatPart then car = hum.SeatPart.Parent end
-    if car and car:IsA("Model") then 
-        local mainPart = car.PrimaryPart or hum.SeatPart
-        mainPart.Velocity = Vector3.new(0,0,0)
-        mainPart.CFrame = targetCF 
-    else 
-        root.CFrame = targetCF
-        root.Velocity = Vector3.new(0,0,0)
-    end
+    if car and car:IsA("Model") then local mainPart = car.PrimaryPart or hum.SeatPart; mainPart.Velocity = Vector3.new(0,0,0); mainPart.CFrame = targetCF
+    else root.CFrame = targetCF; root.Velocity = Vector3.new(0,0,0) end
 end
 
 local function SendChat(msg)
     if game:GetService("TextChatService").ChatVersion == Enum.ChatVersion.TextChatService then
         pcall(function() game:GetService("TextChatService").TextChannels.RBXGeneral:SendAsync(msg) end)
-    else
-        game:GetService("ReplicatedStorage").DefaultChatSystemChatEvents.SayMessageRequest:FireServer(msg, "All")
-    end
+    else game:GetService("ReplicatedStorage").DefaultChatSystemChatEvents.SayMessageRequest:FireServer(msg, "All") end
 end
 
 btnUp.MouseButton1Down:Connect(function() up = true end); btnUp.MouseButton1Up:Connect(function() up = false end)
@@ -510,30 +489,20 @@ end
 local btnTheme = Instance.new("TextButton", PageMain); btnTheme.Size = UDim2.new(1, 0, 0, 40); btnTheme.BackgroundColor3 = Color3.fromRGB(25, 25, 25); btnTheme.Text = "THEME: " .. Themes[CurrentThemeIndex]; btnTheme.TextColor3 = Color3.new(1,1,1); btnTheme.Font = Enum.Font.SciFi; btnTheme.TextSize = 16; style(btnTheme)
 btnTheme.MouseButton1Click:Connect(function() CurrentThemeIndex = CurrentThemeIndex + 1; if CurrentThemeIndex > #Themes then CurrentThemeIndex = 1 end; btnTheme.Text = "THEME: " .. Themes[CurrentThemeIndex] end)
 
-ModelBtn.MouseButton1Click:Connect(function()
-    CurrentModelIndex = CurrentModelIndex + 1
-    if CurrentModelIndex > #GroqModels then CurrentModelIndex = 1 end
-    ModelBtn.Text = "MODEL: " .. GroqModels[CurrentModelIndex]
-end)
+ModelBtn.MouseButton1Click:Connect(function() CurrentModelIndex = CurrentModelIndex + 1; if CurrentModelIndex > #GroqModels then CurrentModelIndex = 1 end; ModelBtn.Text = "MODEL: " .. GroqModels[CurrentModelIndex] end)
 
 local function addOption(name, key, useInput, defaultInputVal, inputCallback)
     local f = Instance.new("Frame", PageMain); f.Size = UDim2.new(1, 0, 0, 40); f.BackgroundTransparency = 1
     local btnSize = useInput and 0.5 or 0.75
     local b = Instance.new("TextButton", f); b.Size = UDim2.new(btnSize, -5, 1, 0); b.Text = name; b.BackgroundColor3 = Color3.fromRGB(20, 20, 20); b.TextColor3 = Color3.new(1,1,1); style(b)
     if States[key] then b.BackgroundColor3 = Color3.fromRGB(40, 40, 40) end
-    
     local function Toggle()
-        States[key] = not States[key]
-        b.BackgroundColor3 = States[key] and Color3.fromRGB(40, 40, 40) or Color3.fromRGB(20, 20, 20)
+        States[key] = not States[key]; b.BackgroundColor3 = States[key] and Color3.fromRGB(40, 40, 40) or Color3.fromRGB(20, 20, 20)
         Notify(name .. (States[key] and " [ON]" or " [OFF]"))
     end
-    
-    local hk = makeBind(name, Toggle)
-    b.MouseButton1Click:Connect(Toggle)
-    
+    local hk = makeBind(name, Toggle); b.MouseButton1Click:Connect(Toggle)
     local bb = Instance.new("TextButton", f); bb.Size = UDim2.new(0.25, 0, 1, 0); bb.Position = UDim2.new(0.75, 0, 0, 0); bb.Text = "BIND"; style(bb)
     bb.MouseButton1Click:Connect(function() hk.Visible = not hk.Visible end)
-    
     if useInput then
         local inp = Instance.new("TextBox", f); inp.Size = UDim2.new(0.25, -5, 1, 0); inp.Position = UDim2.new(0.5, 0, 0, 0); inp.Text = tostring(defaultInputVal); inp.BackgroundColor3 = Color3.fromRGB(15,15,15); inp.TextColor3 = Color3.new(1,1,1); style(inp)
         inp.FocusLost:Connect(function() local n = tonumber(inp.Text); if n then inputCallback(n) else inp.Text = tostring(defaultInputVal) end end)
@@ -541,10 +510,10 @@ local function addOption(name, key, useInput, defaultInputVal, inputCallback)
 end
 
 -- [ OPTIONS ] --
-addOption("SHOW LOGO", "Watermark", false) 
+addOption("SHOW LOGO", "Watermark", false)
 addOption("HUMAN AIM", "Aim", true, valSmooth, function(v) valSmooth = math.clamp(v, 0.01, 1) end)
-addOption("ANTI KNOCKBACK", "AntiKnockback", false) 
-addOption("INF ZOOM", "UnlockAll", false) 
+addOption("ANTI KNOCKBACK", "AntiKnockback", false)
+addOption("INF ZOOM", "UnlockAll", false)
 addOption("SPEED BYPASS", "SpdBypass", true, valBypassSpeed, function(v) valBypassSpeed = v end)
 addOption("KILL AURA", "KillAura", false)
 addOption("BIG HITBOX", "Hitbox", true, valHitbox, function(v) valHitbox = v end)
@@ -552,11 +521,11 @@ addOption("FLY BYPASS", "Fly", true, valFlySpeed, function(v) valFlySpeed = v en
 addOption("RAGE SPEED", "Spd", true, valSpeed, function(v) valSpeed = v end)
 addOption("SUPER JUMP", "Jump", true, valJumpPower, function(v) valJumpPower = v end)
 addOption("JUMP RIPPLE", "Circle", true, valRipple, function(v) valRipple = v end)
-addOption("PENTAGRAM MODE", "UsePentagram", false) 
-addOption("GHOST TRAIL", "Ghosts", true, valGhostRate, function(v) valGhostRate = math.clamp(v, 0.01, 2) end) 
+addOption("PENTAGRAM MODE", "UsePentagram", false)
+addOption("GHOST TRAIL", "Ghosts", true, valGhostRate, function(v) valGhostRate = math.clamp(v, 0.01, 2) end)
 addOption("ESP HIGHLIGHT", "Esp", false)
-addOption("SKIN COLOR", "RGB", false) 
-addOption("FULLBRIGHT", "Fullbright", false) 
+addOption("SKIN COLOR", "RGB", false)
+addOption("FULLBRIGHT", "Fullbright", false)
 addOption("INF JUMP", "InfJump", false)
 
 SideBtn.MouseButton1Click:Connect(function() Main.Visible = not Main.Visible end)
@@ -577,15 +546,12 @@ task.spawn(function() if isfile and isfile(ConfigName) then local data = game:Ge
 
 -- [[ WORLD FUNCTIONS ]] --
 FogBtn.MouseButton1Click:Connect(function()
-    States.NoFog = not States.NoFog
-    FogBtn.Text = States.NoFog and "REMOVE FOG: ON" or "REMOVE FOG: OFF"
+    States.NoFog = not States.NoFog; FogBtn.Text = States.NoFog and "REMOVE FOG: ON" or "REMOVE FOG: OFF"
     FogBtn.BackgroundColor3 = States.NoFog and Color3.fromRGB(10, 50, 10) or Color3.fromRGB(30, 10, 10)
-    if not States.NoFog then Lighting.FogEnd = 1000 end
-    Notify("NO FOG" .. (States.NoFog and " [ON]" or " [OFF]"))
+    if not States.NoFog then Lighting.FogEnd = 1000 end; Notify("NO FOG" .. (States.NoFog and " [ON]" or " [OFF]"))
 end)
 AmbientBtn.MouseButton1Click:Connect(function()
-    States.AmbientSync = not States.AmbientSync
-    AmbientBtn.Text = States.AmbientSync and "AMBIENT SYNC: ON" or "AMBIENT SYNC: OFF"
+    States.AmbientSync = not States.AmbientSync; AmbientBtn.Text = States.AmbientSync and "AMBIENT SYNC: ON" or "AMBIENT SYNC: OFF"
     AmbientBtn.BackgroundColor3 = States.AmbientSync and Color3.fromRGB(10, 50, 10) or Color3.fromRGB(30, 10, 10)
     Notify("AMBIENT" .. (States.AmbientSync and " [ON]" or " [OFF]"))
 end)
@@ -595,65 +561,33 @@ local function SetSky(id)
     sky.SkyboxBk, sky.SkyboxDn, sky.SkyboxFt, sky.SkyboxLf, sky.SkyboxRt, sky.SkyboxUp = tex, tex, tex, tex, tex, tex
     Notify("CUSTOM SKY: " .. tostring(id))
 end
-SetSkyBtn.MouseButton1Click:Connect(function() 
-    local id = SkyBox.Text:gsub("%s+", ""):match("%d+")
-    if id then 
-        SetSky(id) 
-    else
-        Notify("INVALID SKY ID")
-    end
-end)
-SpaceSkyBtn.MouseButton1Click:Connect(function() SetSky("159454299") end) 
+SetSkyBtn.MouseButton1Click:Connect(function() local id = SkyBox.Text:gsub("%s+", ""):match("%d+"); if id then SetSky(id) else Notify("INVALID SKY ID") end end)
+SpaceSkyBtn.MouseButton1Click:Connect(function() SetSky("159454299") end)
 
--- [[ MACRO LOGIC (FIXED) ]] --
+-- [[ MACRO LOGIC ]] --
 RecBtn.MouseButton1Click:Connect(function()
     States.IsRecording = not States.IsRecording
-    if States.IsRecording then 
-        States.IsPlaying = false
-        RecordedPath = {} 
-        RecBtn.Text = "STOP REC"
-        RecBtn.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-        AIStatus.Text = "STATUS: RECORDING..."
-        Notify("RECORDING STARTED") 
-    else 
-        RecBtn.Text = "RECORD"
-        RecBtn.BackgroundColor3 = Color3.fromRGB(40, 10, 10)
-        AIStatus.Text = "STATUS: SAVED " .. #RecordedPath .. " FRAMES"
-        Notify("RECORDING STOPPED") 
+    if States.IsRecording then
+        States.IsPlaying = false; RecordedPath = {}; RecBtn.Text = "STOP REC"; RecBtn.BackgroundColor3 = Color3.fromRGB(255, 0, 0); AIStatus.Text = "STATUS: RECORDING..."; Notify("RECORDING STARTED")
+    else
+        RecBtn.Text = "RECORD"; RecBtn.BackgroundColor3 = Color3.fromRGB(40, 10, 10); AIStatus.Text = "STATUS: SAVED " .. #RecordedPath .. " FRAMES"; Notify("RECORDING STOPPED")
     end
 end)
 
 local function StartPlayback()
     if #RecordedPath == 0 then AIStatus.Text = "ERROR: NO RECORDING"; States.IsPlaying = false; return end
-    
-    local char = Player.Character
-    local root = char and char:FindFirstChild("HumanoidRootPart")
-    local hum = char and char:FindFirstChild("Humanoid")
-    if root and hum then
-        hum.PlatformStand = true
-        root.Anchored = true
-    end
-
+    local char = Player.Character; local root = char and char:FindFirstChild("HumanoidRootPart"); local hum = char and char:FindFirstChild("Humanoid")
+    if root and hum then hum.PlatformStand = true; root.Anchored = true end
     task.spawn(function()
         while States.IsPlaying do
             for i, frame in ipairs(RecordedPath) do
-                if not States.IsPlaying then break end
-                SmartMove(frame.CF)
-                RunService.Heartbeat:Wait()
+                if not States.IsPlaying then break end; SmartMove(frame.CF); RunService.Heartbeat:Wait()
             end
-            if not States.LoopPlay then 
-                States.IsPlaying = false
-                PlayBtn.Text = "PLAY"
-                PlayBtn.BackgroundColor3 = Color3.fromRGB(10, 40, 10)
-                Notify("PLAYBACK ENDED")
-                break 
-            end
+            if not States.LoopPlay then States.IsPlaying = false; PlayBtn.Text = "PLAY"; PlayBtn.BackgroundColor3 = Color3.fromRGB(10, 40, 10); Notify("PLAYBACK ENDED"); break end
         end
         if Player.Character then
-            local r = Player.Character:FindFirstChild("HumanoidRootPart")
-            local h = Player.Character:FindFirstChild("Humanoid")
-            if r then r.Anchored = false r.Velocity = Vector3.zero end
-            if h then h.PlatformStand = false end
+            local r = Player.Character:FindFirstChild("HumanoidRootPart"); local h = Player.Character:FindFirstChild("Humanoid")
+            if r then r.Anchored = false; r.Velocity = Vector3.zero end; if h then h.PlatformStand = false end
         end
         AIStatus.Text = "STATUS: IDLE"
     end)
@@ -661,44 +595,28 @@ end
 
 PlayBtn.MouseButton1Click:Connect(function()
     States.IsPlaying = not States.IsPlaying
-    if States.IsPlaying then 
-        States.IsRecording = false
-        RecBtn.Text = "RECORD"
-        RecBtn.BackgroundColor3 = Color3.fromRGB(40, 10, 10)
-        PlayBtn.Text = "STOP PLAY"
-        PlayBtn.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
-        Notify("PLAYBACK STARTED")
-        StartPlayback() 
-    else 
-        PlayBtn.Text = "PLAY"
-        PlayBtn.BackgroundColor3 = Color3.fromRGB(10, 40, 10)
-        EmergencyBrake()
-        Notify("PLAYBACK STOPPED") 
-    end
+    if States.IsPlaying then
+        States.IsRecording = false; RecBtn.Text = "RECORD"; RecBtn.BackgroundColor3 = Color3.fromRGB(40, 10, 10)
+        PlayBtn.Text = "STOP PLAY"; PlayBtn.BackgroundColor3 = Color3.fromRGB(0, 255, 0); Notify("PLAYBACK STARTED"); StartPlayback()
+    else PlayBtn.Text = "PLAY"; PlayBtn.BackgroundColor3 = Color3.fromRGB(10, 40, 10); EmergencyBrake(); Notify("PLAYBACK STOPPED") end
 end)
-
 LoopBtn.MouseButton1Click:Connect(function()
-    States.LoopPlay = not States.LoopPlay
-    LoopBtn.Text = States.LoopPlay and "LOOP PLAYBACK: ON" or "LOOP PLAYBACK: OFF"
+    States.LoopPlay = not States.LoopPlay; LoopBtn.Text = States.LoopPlay and "LOOP PLAYBACK: ON" or "LOOP PLAYBACK: OFF"
     LoopBtn.BackgroundColor3 = States.LoopPlay and Color3.fromRGB(10, 50, 10) or Color3.fromRGB(30, 30, 30)
     Notify("LOOP" .. (States.LoopPlay and " [ON]" or " [OFF]"))
 end)
 
 -- [[ AI LOGIC (GROQ) ]] --
 local AI_Debounce = false
-AIToggleBtn.MouseButton1Click:Connect(function() 
-    States.AI = not States.AI
-    AIToggleBtn.Text = States.AI and "AI AUTOREPLY: ON" or "AI AUTOREPLY: OFF"
+AIToggleBtn.MouseButton1Click:Connect(function()
+    States.AI = not States.AI; AIToggleBtn.Text = States.AI and "AI AUTOREPLY: ON" or "AI AUTOREPLY: OFF"
     AIToggleBtn.BackgroundColor3 = States.AI and Color3.fromRGB(10, 50, 10) or Color3.fromRGB(30, 10, 10)
-    Notify("AI CHAT" .. (States.AI and " [ON]" or " [OFF]"))
-    if States.AI then SendChat("AngerMOD: Модуль чата активен.") end
+    Notify("AI CHAT" .. (States.AI and " [ON]" or " [OFF]")); if States.AI then SendChat("AngerMOD: Модуль чата активен.") end
 end)
-FriendBtn.MouseButton1Click:Connect(function() 
-    States.FriendBot = not States.FriendBot
-    FriendBtn.Text = States.FriendBot and "FRIEND BOT: ON" or "FRIEND BOT: OFF"
-    FriendBtn.BackgroundColor3 = States.FriendBot and Color3.fromRGB(10, 50, 10) or Color3.fromRGB(30, 10, 10) 
-    Notify("FRIEND BOT" .. (States.FriendBot and " [ON]" or " [OFF]"))
-    if States.FriendBot then SendChat("Я теперь твой хвостик!") end
+FriendBtn.MouseButton1Click:Connect(function()
+    States.FriendBot = not States.FriendBot; FriendBtn.Text = States.FriendBot and "FRIEND BOT: ON" or "FRIEND BOT: OFF"
+    FriendBtn.BackgroundColor3 = States.FriendBot and Color3.fromRGB(10, 50, 10) or Color3.fromRGB(30, 10, 10)
+    Notify("FRIEND BOT" .. (States.FriendBot and " [ON]" or " [OFF]")); if States.FriendBot then SendChat("Я теперь твой хвостик!") end
 end)
 
 local function ExecuteCommand(msg)
@@ -712,7 +630,7 @@ end
 
 local function ProcessAI(msg, senderName)
     if AI_Debounce then return end
-    if States.FriendBot and ExecuteCommand(msg) then return end 
+    if States.FriendBot and ExecuteCommand(msg) then return end
     if not States.AI then return end
     AI_Debounce = true; AIStatus.Text = "STATUS: THINKING..."
     local apiKey = AIKeyBox.Text; if apiKey == "" then AIStatus.Text = "ERROR: NO KEY"; AI_Debounce = false; return end
@@ -720,32 +638,18 @@ local function ProcessAI(msg, senderName)
     if #ChatHistory > 10 then table.remove(ChatHistory, 2) end
     local success, response = pcall(function()
         if request then return request({ 
-            Url = "https://api.groq.com/openai/v1/chat/completions", 
-            Method = "POST", 
-            Headers = {
-                ["Content-Type"] = "application/json", 
-                ["Authorization"] = "Bearer " .. apiKey
-            }, 
-            Body = HttpService:JSONEncode({ 
-                model = GroqModels[CurrentModelIndex], 
-                messages = ChatHistory, 
-                max_tokens = 60 
-            }) 
+            Url = "https://api.groq.com/openai/v1/chat/completions", Method = "POST",
+            Headers = { ["Content-Type"] = "application/json", ["Authorization"] = "Bearer " .. apiKey },
+            Body = HttpService:JSONEncode({ model = GroqModels[CurrentModelIndex], messages = ChatHistory, max_tokens = 60 })
         }) end
     end)
-    if success and response and response.Body then 
+    if success and response and response.Body then
         local data = HttpService:JSONDecode(response.Body)
-        if data.choices and data.choices[1] then 
-            local reply = data.choices[1].message.content
-            SendChat(reply)
-            table.insert(ChatHistory, {role = "assistant", content = reply})
-            AIStatus.Text = "STATUS: REPLIED" 
-        else 
-            AIStatus.Text = "ERROR: API FAIL" 
-        end
-    else 
-        AIStatus.Text = "ERROR: REQUEST FAIL" 
-    end
+        if data.choices and data.choices[1] then
+            local reply = data.choices[1].message.content; SendChat(reply)
+            table.insert(ChatHistory, {role = "assistant", content = reply}); AIStatus.Text = "STATUS: REPLIED"
+        else AIStatus.Text = "ERROR: API FAIL" end
+    else AIStatus.Text = "ERROR: REQUEST FAIL" end
     task.wait(2); AI_Debounce = false; task.wait(1); AIStatus.Text = "STATUS: WAITING..."
 end
 for _, p in pairs(Players:GetPlayers()) do p.Chatted:Connect(function(msg) if p ~= Player then ProcessAI(msg, p.Name) end end) end
@@ -757,9 +661,9 @@ local function SpawnRipple()
     local root = Player.Character.HumanoidRootPart; local ray = workspace:Raycast(root.Position, Vector3.new(0, -10, 0), RaycastParams.new())
     local spawnPos = ray and ray.Position or (root.Position - Vector3.new(0, 2.8, 0)); local p = Instance.new("Part", workspace); p.Name = "AngerRipple"; p.Anchored = true; p.CanCollide = false
     if States.UsePentagram then
-        p.Transparency = 1; p.Size = Vector3.new(1, 0.05, 1); p.CFrame = CFrame.new(spawnPos); local sg = Instance.new("SurfaceGui", p); sg.Face = Enum.NormalId.Top; sg.LightInfluence = 0; sg.AlwaysOnTop = false; local img = Instance.new("ImageLabel", sg); img.Size = UDim2.new(1, 0, 1, 0); img.BackgroundTransparency = 1; img.ImageColor3 = Color3.new(1, 1, 1); 
+        p.Transparency = 1; p.Size = Vector3.new(1, 0.05, 1); p.CFrame = CFrame.new(spawnPos); local sg = Instance.new("SurfaceGui", p); sg.Face = Enum.NormalId.Top; sg.LightInfluence = 0; sg.AlwaysOnTop = false; local img = Instance.new("ImageLabel", sg); img.Size = UDim2.new(1, 0, 1, 0); img.BackgroundTransparency = 1; img.ImageColor3 = Color3.new(1, 1, 1)
         local s, a = pcall(function() return getcustomasset("Anger_Pentagram_Circle1.png") end)
-        if s then img.Image = a else img.Image = "rbxassetid://0" end; 
+        if s then img.Image = a else img.Image = "rbxassetid://0" end
         table.insert(RGB_Objects, {Type = "Image", Instance = img}); TweenService:Create(p, TweenInfo.new(1.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = Vector3.new(valRipple, 0.05, valRipple)}):Play(); TweenService:Create(img, TweenInfo.new(1.5, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {ImageTransparency = 1}):Play(); Debris:AddItem(p, 1.5)
     else
         p.Shape = Enum.PartType.Cylinder; p.Material = Enum.Material.Neon; p.Size = Vector3.new(0.1, 1, 1); p.CFrame = CFrame.new(spawnPos) * CFrame.Angles(0, 0, math.rad(90)); p.Color = Color3.new(1,1,1); table.insert(RGB_Objects, {Type = "Part", Instance = p}); TweenService:Create(p, TweenInfo.new(1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = Vector3.new(0.1, valRipple, valRipple), Transparency = 1}):Play(); Debris:AddItem(p, 1)
@@ -768,15 +672,15 @@ end
 
 local function GetClosestPlayer()
     local target = nil; local dist = math.huge
-    for _, v in pairs(Players:GetPlayers()) do 
-        if v ~= Player and v.Character and v.Character:FindFirstChild("Head") and v.Character:FindFirstChild("Humanoid") and v.Character.Humanoid.Health > 0 then 
+    for _, v in pairs(Players:GetPlayers()) do
+        if v ~= Player and v.Character and v.Character:FindFirstChild("Head") and v.Character:FindFirstChild("Humanoid") and v.Character.Humanoid.Health > 0 then
             local d = (v.Character.Head.Position - Camera.CFrame.Position).Magnitude
-            if d < dist then dist = d; target = v.Character end 
-        end 
+            if d < dist then dist = d; target = v.Character end
+        end
     end; return target
 end
 
-Player.CharacterAdded:Connect(function(char) 
+Player.CharacterAdded:Connect(function(char)
     DeathScreen.Enabled = false
     char:WaitForChild("Humanoid").Died:Connect(function() DeathScreen.Enabled = true end)
 end)
@@ -784,142 +688,72 @@ end)
 -- [[ ESP LINES ]] --
 local function CreateESPLine(player)
     if ESPLines[player] then return end
-    local line = Drawing.new("Line")
-    line.Visible = false
-    line.Color = Color3.new(1, 1, 1)
-    line.Thickness = 2
-    line.Transparency = 0.8
-    ESPLines[player] = line
+    local line = Drawing.new("Line"); line.Visible = false; line.Color = Color3.new(1, 1, 1); line.Thickness = 2; line.Transparency = 0.8; ESPLines[player] = line
 end
 
 local function UpdateESPLines(activeColor)
     for player, line in pairs(ESPLines) do
         if player.Character and player.Character:FindFirstChild("HumanoidRootPart") and States.Esp then
-            local char = player.Character
-            local rootPart = char.HumanoidRootPart
+            local char = player.Character; local rootPart = char.HumanoidRootPart
             local vector, onScreen = Camera:WorldToViewportPoint(rootPart.Position)
-            
-            if onScreen then
-                line.From = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y)
-                line.To = Vector2.new(vector.X, vector.Y)
-                line.Color = activeColor
-                line.Visible = true
-            else
-                line.Visible = false
-            end
-        else
-            line.Visible = false
-        end
+            if onScreen then line.From = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y); line.To = Vector2.new(vector.X, vector.Y); line.Color = activeColor; line.Visible = true
+            else line.Visible = false end
+        else line.Visible = false end
     end
 end
 
-for _, player in pairs(Players:GetPlayers()) do
-    if player ~= Player then CreateESPLine(player) end
-end
-
-Players.PlayerAdded:Connect(function(player)
-    CreateESPLine(player)
-end)
-
-Players.PlayerRemoving:Connect(function(player)
-    if ESPLines[player] then
-        ESPLines[player]:Remove()
-        ESPLines[player] = nil
-    end
-end)
+for _, player in pairs(Players:GetPlayers()) do if player ~= Player then CreateESPLine(player) end end
+Players.PlayerAdded:Connect(function(player) CreateESPLine(player) end)
+Players.PlayerRemoving:Connect(function(player) if ESPLines[player] then ESPLines[player]:Remove(); ESPLines[player] = nil end end)
 
 -- [[ RENDER LOOP ]] --
 local lastGhostTime = 0
 RunService.RenderStepped:Connect(function()
-    pcall(function() 
-        local tickTime = tick()
-        local currentThemeName = Themes[CurrentThemeIndex]
-        local activeColor = Color3.new(1,1,1)
+    pcall(function()
+        local tickTime = tick(); local currentThemeName = Themes[CurrentThemeIndex]; local activeColor = Color3.new(1,1,1)
         if currentThemeName == "RGB" then activeColor = Color3.fromHSV(tickTime % 3 / 3, 1, 1) elseif ThemeColors[currentThemeName] then activeColor = ThemeColors[currentThemeName] end
-        
         if States.AmbientSync then Lighting.OutdoorAmbient = activeColor; Lighting.Ambient = activeColor end
         if States.NoFog then Lighting.FogEnd = 1000000; Lighting.FogStart = 1000000 end
-
         DeathLabel.TextColor3 = activeColor
-        for i, obj in pairs(RGB_Objects) do 
-            if obj.Instance and obj.Instance.Parent then 
-                if obj.Type == "Stroke" then obj.Instance.Color = activeColor elseif obj.Type == "Text" then obj.Instance.TextColor3 = activeColor elseif obj.Type == "Image" then obj.Instance.ImageColor3 = activeColor elseif obj.Type == "Part" then obj.Instance.Color = activeColor end 
-            else table.remove(RGB_Objects, i) end 
+        for i, obj in pairs(RGB_Objects) do
+            if obj.Instance and obj.Instance.Parent then
+                if obj.Type == "Stroke" then obj.Instance.Color = activeColor elseif obj.Type == "Text" then obj.Instance.TextColor3 = activeColor elseif obj.Type == "Image" then obj.Instance.ImageColor3 = activeColor elseif obj.Type == "Part" then obj.Instance.Color = activeColor end
+            else table.remove(RGB_Objects, i) end
         end
-        
         UpdateESPLines(activeColor)
-        
         local wm = ScreenGui.Parent:FindFirstChild("AngerWatermark"); if wm then wm.Enabled = States.Watermark end
         if PageInfo.Visible then InfoLabel.Text = string.format("SESSION:\nUser: %s\nID: %s\nFPS: %d\nPing: %d ms", Player.Name, SessionID, math.floor(workspace:GetRealPhysicsFPS()), math.floor(Stats.Network.ServerStatsItem["Data Ping"]:GetValue())) end
-
         local char = Player.Character; if not char or not char:FindFirstChild("HumanoidRootPart") then return end
         local hum = char:FindFirstChild("Humanoid"); local root = char:FindFirstChild("HumanoidRootPart")
-
         if States.AntiKnockback then
-             if root.Velocity.Magnitude > 25 then
-                 if hum.MoveDirection.Magnitude > 0 then
-                    root.Velocity = hum.MoveDirection * hum.WalkSpeed
-                 else
-                    root.Velocity = Vector3.new(0,0,0)
-                 end
-                 root.RotVelocity = Vector3.new(0,0,0)
-             end
-        end
-
-        if States.Aim then
-            local target = GetClosestPlayer()
-            if target and target:FindFirstChild("Head") then
-                Camera.CFrame = Camera.CFrame:Lerp(CFrame.new(Camera.CFrame.Position, target.Head.Position), valSmooth)
+            if root.Velocity.Magnitude > 25 then
+                if hum.MoveDirection.Magnitude > 0 then root.Velocity = hum.MoveDirection * hum.WalkSpeed else root.Velocity = Vector3.new(0,0,0) end
+                root.RotVelocity = Vector3.new(0,0,0)
             end
         end
-        
-        if States.IsRecording then 
-             local pos = root.CFrame
-             if hum and hum.SeatPart then pos = hum.SeatPart.CFrame end
-             table.insert(RecordedPath, {CF = pos}) 
-        end
-
-        if States.UnlockAll then 
-            Player.CameraMaxZoomDistance = 100000
-            Player.CameraMinZoomDistance = 0 
-            if Player.CameraMode ~= Enum.CameraMode.Classic then Player.CameraMode = Enum.CameraMode.Classic end
-        end
-
+        if States.Aim then local target = GetClosestPlayer(); if target and target:FindFirstChild("Head") then Camera.CFrame = Camera.CFrame:Lerp(CFrame.new(Camera.CFrame.Position, target.Head.Position), valSmooth) end end
+        if States.IsRecording then local pos = root.CFrame; if hum and hum.SeatPart then pos = hum.SeatPart.CFrame end; table.insert(RecordedPath, {CF = pos}) end
+        if States.UnlockAll then Player.CameraMaxZoomDistance = 100000; Player.CameraMinZoomDistance = 0; if Player.CameraMode ~= Enum.CameraMode.Classic then Player.CameraMode = Enum.CameraMode.Classic end end
         if States.SpdBypass and hum.MoveDirection.Magnitude > 0 then root.CFrame = root.CFrame + (hum.MoveDirection * valBypassSpeed) end
         if States.Fly and root and hum then root.Velocity = Vector3.new(0, 0.1, 0); if hum.MoveDirection.Magnitude > 0 then root.CFrame = root.CFrame + (hum.MoveDirection * valFlySpeed) end; if up then root.CFrame = root.CFrame * CFrame.new(0, valFlySpeed, 0) end; if down then root.CFrame = root.CFrame * CFrame.new(0, -valFlySpeed, 0) end end
         if States.KillAura then local tool = char:FindFirstChildOfClass("Tool"); if tool and tool:FindFirstChild("Handle") then for _, v in pairs(game.Players:GetPlayers()) do if v ~= Player and v.Character and v.Character:FindFirstChild("Head") and v.Character.Humanoid.Health > 0 then local dist = (v.Character.Head.Position - root.Position).Magnitude; if dist < 50 then tool.Handle.CFrame = v.Character.Head.CFrame; tool:Activate(); pcall(function() firetouchinterest(tool.Handle, v.Character.Head, 0); firetouchinterest(tool.Handle, v.Character.Head, 1) end); break end end end end end
         if States.Ghosts and tick() - lastGhostTime > valGhostRate then lastGhostTime = tick(); for _, v in pairs(char:GetChildren()) do if v:IsA("BasePart") and v.Transparency < 1 then local g = v:Clone(); g.Parent = workspace; g.Anchored = true; g.CanCollide = false; g.CFrame = v.CFrame; g.Color = activeColor; g.Material = Enum.Material.Neon; g:ClearAllChildren(); TweenService:Create(g, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Transparency=1, CFrame=g.CFrame*CFrame.Angles(math.rad(math.random(-180,180)),math.rad(math.random(-180,180)),0), Size=g.Size*1.1}):Play(); Debris:AddItem(g, 0.5) end end end
         if States.Spd and hum.MoveDirection.Magnitude > 0 then root.CFrame += (hum.MoveDirection * (0.5 * valSpeed)) end
         if States.Jump then hum.UseJumpPower = true; hum.JumpPower = valJumpPower else hum.JumpPower = 50 end
-
         if States.Esp then
             for _, v in pairs(game.Players:GetPlayers()) do
                 if v ~= Player and v.Character then
-                    if not v.Character:FindFirstChild("AngerESP") then
-                        local hl = Instance.new("Highlight", v.Character); hl.Name = "AngerESP"; hl.FillTransparency = 0.5; hl.OutlineTransparency = 0
-                    else
-                        v.Character.AngerESP.FillColor = activeColor
-                    end
+                    if not v.Character:FindFirstChild("AngerESP") then local hl = Instance.new("Highlight", v.Character); hl.Name = "AngerESP"; hl.FillTransparency = 0.5; hl.OutlineTransparency = 0
+                    else v.Character.AngerESP.FillColor = activeColor end
                 end
             end
-        else
-            for _, v in pairs(game.Players:GetPlayers()) do if v.Character and v.Character:FindFirstChild("AngerESP") then v.Character.AngerESP:Destroy() end end
-        end
-
-        for _, v in pairs(game.Players:GetPlayers()) do 
-            if v ~= Player and v.Character and v.Character:FindFirstChild("Head") then 
+        else for _, v in pairs(game.Players:GetPlayers()) do if v.Character and v.Character:FindFirstChild("AngerESP") then v.Character.AngerESP:Destroy() end end end
+        for _, v in pairs(game.Players:GetPlayers()) do
+            if v ~= Player and v.Character and v.Character:FindFirstChild("Head") then
                 local head = v.Character.Head
-                if States.Hitbox then
-                    head.Size = Vector3.new(valHitbox, valHitbox, valHitbox)
-                    head.Transparency = 0.7
-                    head.CanCollide = false
-                    head.Color = activeColor
-                    head.Material = Enum.Material.Neon
-                else
-                    head.Size = Vector3.new(1,1,1)
-                    head.Transparency = 0
-                end
-            end 
+                if States.Hitbox then head.Size = Vector3.new(valHitbox, valHitbox, valHitbox); head.Transparency = 0.7; head.CanCollide = false; head.Color = activeColor; head.Material = Enum.Material.Neon
+                else head.Size = Vector3.new(1,1,1); head.Transparency = 0 end
+            end
         end
     end)
 end)
@@ -942,4 +776,6 @@ task.spawn(function()
     if writefile and readfile and isfile then pcall(function() if not isfile(pentagramName) then writefile(pentagramName, game:HttpGet(pentagramUrl)) end end) end
 end)
 
-Notify("AngerPC V127 LOADED")
+Notify("⛧ AngerPC V127 LOADED ⛧")
+
+end -- конец StartAngerMOD()
