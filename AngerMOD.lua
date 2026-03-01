@@ -942,4 +942,471 @@ task.spawn(function()
     if writefile and readfile and isfile then pcall(function() if not isfile(pentagramName) then writefile(pentagramName, game:HttpGet(pentagramUrl)) end end) end
 end)
 
+-- ════════════════════════════════════════════════
+-- [[ ⛧ ANGER ESP BOX SYSTEM ⛧ ]]
+-- Бокс | Ник | HP | Дистанция | Skeleton | Radar
+-- ════════════════════════════════════════════════
+
+local ESPData = {}      -- { box, nameLabel, hpBar, hpBg, hpText, distLabel, skeleton, tracerLine }
+local ESPEnabled = true -- глобальный флаг (уже есть States.Esp, но делаем отдельно)
+local BOX_ESP   = true
+local NAME_ESP  = true
+local HP_ESP    = true
+local DIST_ESP  = true
+local SKELETON_ESP = true
+local TRACER_ESP   = false  -- линия к ногам (tracer)
+local RADAR_ESP    = true
+
+-- ── RADAR ──────────────────────────────────────
+local RadarFrame = Instance.new("Frame", ScreenGui)
+RadarFrame.Name = "AngerRadar"
+RadarFrame.Size = UDim2.new(0, 160, 0, 160)
+RadarFrame.Position = UDim2.new(1, -175, 0, 10)
+RadarFrame.BackgroundColor3 = Color3.fromRGB(5, 5, 5)
+RadarFrame.BackgroundTransparency = 0.3
+RadarFrame.Visible = RADAR_ESP
+style(RadarFrame, 80, 2)
+
+local RadarTitle = Instance.new("TextLabel", RadarFrame)
+RadarTitle.Size = UDim2.new(1, 0, 0, 16)
+RadarTitle.BackgroundTransparency = 1
+RadarTitle.Text = "⛧ RADAR"
+RadarTitle.Font = Enum.Font.SciFi
+RadarTitle.TextSize = 12
+RadarTitle.TextColor3 = Color3.new(1, 1, 1)
+table.insert(RGB_Objects, {Type = "Text", Instance = RadarTitle})
+
+-- Центральная точка радара (я)
+local RadarSelf = Instance.new("Frame", RadarFrame)
+RadarSelf.Size = UDim2.new(0, 6, 0, 6)
+RadarSelf.Position = UDim2.new(0.5, -3, 0.5, -3)
+RadarSelf.BackgroundColor3 = Color3.fromRGB(0, 255, 100)
+RadarSelf.BorderSizePixel = 0
+Instance.new("UICorner", RadarSelf).CornerRadius = UDim.new(1, 0)
+
+local RadarDots = {}  -- пул точек
+
+local function GetOrCreateRadarDot(player)
+    if not RadarDots[player] then
+        local dot = Instance.new("Frame", RadarFrame)
+        dot.Size = UDim2.new(0, 5, 0, 5)
+        dot.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
+        dot.BorderSizePixel = 0
+        dot.ZIndex = 5
+        Instance.new("UICorner", dot).CornerRadius = UDim.new(1, 0)
+        local lbl = Instance.new("TextLabel", dot)
+        lbl.Size = UDim2.new(0, 50, 0, 12)
+        lbl.Position = UDim2.new(1, 2, 0, -3)
+        lbl.BackgroundTransparency = 1
+        lbl.TextColor3 = Color3.new(1, 1, 1)
+        lbl.Font = Enum.Font.SciFi
+        lbl.TextSize = 9
+        lbl.Text = player.Name
+        RadarDots[player] = {dot = dot, label = lbl}
+    end
+    return RadarDots[player]
+end
+
+-- ── SKELETON LIMB NAMES ──────────────────────────
+local SkeletonPairs = {
+    {"Head", "UpperTorso"}, {"UpperTorso", "LowerTorso"},
+    {"UpperTorso", "RightUpperArm"}, {"RightUpperArm", "RightLowerArm"}, {"RightLowerArm", "RightHand"},
+    {"UpperTorso", "LeftUpperArm"},  {"LeftUpperArm", "LeftLowerArm"},   {"LeftLowerArm", "LeftHand"},
+    {"LowerTorso", "RightUpperLeg"}, {"RightUpperLeg", "RightLowerLeg"}, {"RightLowerLeg", "RightFoot"},
+    {"LowerTorso", "LeftUpperLeg"},  {"LeftUpperLeg", "LeftLowerLeg"},   {"LeftLowerLeg", "LeftFoot"},
+    -- R6 fallback
+    {"Head", "Torso"}, {"Torso", "Right Arm"}, {"Torso", "Left Arm"},
+    {"Torso", "Right Leg"}, {"Torso", "Left Leg"}
+}
+
+-- ── HELPER: создать Drawing-объект ──────────────
+local function NewDrawLine(color, thick, trans)
+    local l = Drawing.new("Line")
+    l.Color = color or Color3.new(1,1,1)
+    l.Thickness = thick or 1
+    l.Transparency = trans or 1
+    l.Visible = false
+    return l
+end
+
+local function NewDrawQuad(color, thick)
+    local q = Drawing.new("Quad")
+    q.Color = color or Color3.new(1,1,1)
+    q.Thickness = thick or 1.5
+    q.Filled = false
+    q.Visible = false
+    return q
+end
+
+-- ── СОЗДАТЬ ESP ДЛЯ ИГРОКА ──────────────────────
+local function CreateBoxESP(player)
+    if ESPData[player] then return end
+
+    -- Бокс (Quad)
+    local box = NewDrawQuad(Color3.new(1,1,1), 1.5)
+
+    -- Угловые декоры (4 линии по углам, как в читах)
+    local corners = {}
+    for i = 1, 8 do
+        corners[i] = NewDrawLine(Color3.new(1,1,1), 2.5)
+    end
+
+    -- Ник над боксом
+    local nameLabel = Drawing.new("Text")
+    nameLabel.Size = 14
+    nameLabel.Font = Drawing.Fonts.Plex
+    nameLabel.Center = true
+    nameLabel.Outline = true
+    nameLabel.Color = Color3.new(1,1,1)
+    nameLabel.Visible = false
+
+    -- Подпись под ником: дистанция
+    local distLabel = Drawing.new("Text")
+    distLabel.Size = 11
+    distLabel.Font = Drawing.Fonts.Plex
+    distLabel.Center = true
+    distLabel.Outline = true
+    distLabel.Color = Color3.fromRGB(200, 200, 200)
+    distLabel.Visible = false
+
+    -- HP-полоса (фон)
+    local hpBg = Drawing.new("Line")
+    hpBg.Color = Color3.fromRGB(10, 10, 10)
+    hpBg.Thickness = 5
+    hpBg.Transparency = 1
+    hpBg.Visible = false
+
+    -- HP-полоса (заливка)
+    local hpBar = Drawing.new("Line")
+    hpBar.Color = Color3.fromRGB(0, 255, 80)
+    hpBar.Thickness = 3
+    hpBar.Transparency = 1
+    hpBar.Visible = false
+
+    -- HP-текст справа
+    local hpText = Drawing.new("Text")
+    hpText.Size = 10
+    hpText.Font = Drawing.Fonts.Plex
+    hpText.Center = false
+    hpText.Outline = true
+    hpText.Color = Color3.new(1,1,1)
+    hpText.Visible = false
+
+    -- Скелет (14 линий)
+    local skeletonLines = {}
+    for i = 1, #SkeletonPairs do
+        skeletonLines[i] = NewDrawLine(Color3.fromRGB(255, 255, 100), 1)
+    end
+
+    -- Трейсер
+    local tracer = NewDrawLine(Color3.new(1,1,1), 1, 0.7)
+
+    ESPData[player] = {
+        box = box, corners = corners,
+        nameLabel = nameLabel, distLabel = distLabel,
+        hpBg = hpBg, hpBar = hpBar, hpText = hpText,
+        skeletonLines = skeletonLines, tracer = tracer
+    }
+end
+
+local function RemoveBoxESP(player)
+    local d = ESPData[player]
+    if not d then return end
+    d.box:Remove()
+    for _, c in ipairs(d.corners) do c:Remove() end
+    d.nameLabel:Remove(); d.distLabel:Remove()
+    d.hpBg:Remove(); d.hpBar:Remove(); d.hpText:Remove()
+    for _, l in ipairs(d.skeletonLines) do l:Remove() end
+    d.tracer:Remove()
+    ESPData[player] = nil
+    -- Убираем радар-точку
+    if RadarDots[player] then
+        RadarDots[player].dot:Destroy()
+        RadarDots[player] = nil
+    end
+end
+
+-- ── ИНИЦИАЛИЗАЦИЯ ───────────────────────────────
+for _, p in pairs(Players:GetPlayers()) do
+    if p ~= Player then CreateBoxESP(p) end
+end
+Players.PlayerAdded:Connect(function(p) CreateBoxESP(p) end)
+Players.PlayerRemoving:Connect(function(p) RemoveBoxESP(p) end)
+
+-- ── КНОПКИ ESP В MAIN MENU ──────────────────────
+-- Добавляем в PageMain
+
+local function MakeToggleBtn(parent, label, state, callback)
+    local btn = Instance.new("TextButton", parent)
+    btn.Size = UDim2.new(1, 0, 0, 36)
+    btn.BackgroundColor3 = state and Color3.fromRGB(10, 40, 10) or Color3.fromRGB(30, 10, 10)
+    btn.TextColor3 = Color3.new(1,1,1)
+    btn.Font = Enum.Font.SciFi
+    btn.TextSize = 13
+    btn.Text = label .. (state and ": ON" or ": OFF")
+    style(btn, 4, 1)
+    btn.MouseButton1Click:Connect(function()
+        state = not state
+        btn.BackgroundColor3 = state and Color3.fromRGB(10,40,10) or Color3.fromRGB(30,10,10)
+        btn.Text = label .. (state and ": ON" or ": OFF")
+        if callback then callback(state) end
+    end)
+    return btn
+end
+
+local espSection = Instance.new("TextLabel", PageMain)
+espSection.Size = UDim2.new(1, 0, 0, 20)
+espSection.BackgroundTransparency = 1
+espSection.Text = "─── BOX ESP ───"
+espSection.Font = Enum.Font.SciFi
+espSection.TextSize = 12
+espSection.TextColor3 = Color3.fromRGB(180, 180, 180)
+
+MakeToggleBtn(PageMain, "📦 BOX ESP", BOX_ESP, function(v) BOX_ESP = v end)
+MakeToggleBtn(PageMain, "👤 NAME ESP", NAME_ESP, function(v) NAME_ESP = v end)
+MakeToggleBtn(PageMain, "❤ HP BAR", HP_ESP, function(v) HP_ESP = v end)
+MakeToggleBtn(PageMain, "📏 DISTANCE", DIST_ESP, function(v) DIST_ESP = v end)
+MakeToggleBtn(PageMain, "💀 SKELETON", SKELETON_ESP, function(v) SKELETON_ESP = v end)
+MakeToggleBtn(PageMain, "➡ TRACER", TRACER_ESP, function(v) TRACER_ESP = v end)
+MakeToggleBtn(PageMain, "🛰 RADAR", RADAR_ESP, function(v)
+    RADAR_ESP = v
+    RadarFrame.Visible = v
+end)
+
+-- ── UPDATE LOOP ─────────────────────────────────
+local function UpdateBoxESP(activeColor)
+    local myChar = Player.Character
+    local myRoot = myChar and myChar:FindFirstChild("HumanoidRootPart")
+
+    -- Убираем всё, если ESP выключен
+    if not States.Esp then
+        for _, d in pairs(ESPData) do
+            d.box.Visible = false
+            for _, c in ipairs(d.corners) do c.Visible = false end
+            d.nameLabel.Visible = false; d.distLabel.Visible = false
+            d.hpBg.Visible = false; d.hpBar.Visible = false; d.hpText.Visible = false
+            for _, l in ipairs(d.skeletonLines) do l.Visible = false end
+            d.tracer.Visible = false
+        end
+        for _, rd in pairs(RadarDots) do rd.dot.Visible = false end
+        return
+    end
+
+    for _, p in pairs(Players:GetPlayers()) do
+        if p == Player then continue end
+        local d = ESPData[p]
+        if not d then continue end
+
+        local char = p.Character
+        local hum = char and char:FindFirstChildOfClass("Humanoid")
+        local root = char and char:FindFirstChild("HumanoidRootPart")
+        local head = char and char:FindFirstChild("Head")
+
+        if not char or not root or not head or not hum or hum.Health <= 0 then
+            d.box.Visible = false
+            for _, c in ipairs(d.corners) do c.Visible = false end
+            d.nameLabel.Visible = false; d.distLabel.Visible = false
+            d.hpBg.Visible = false; d.hpBar.Visible = false; d.hpText.Visible = false
+            for _, l in ipairs(d.skeletonLines) do l.Visible = false end
+            d.tracer.Visible = false
+            if RadarDots[p] then RadarDots[p].dot.Visible = false end
+            continue
+        end
+
+        -- Вычисляем bbox персонажа
+        local rootPos = root.Position
+        local headPos = head.Position
+        local topPos = rootPos + Vector3.new(0, 3.2, 0)   -- чуть выше головы
+        local botPos = rootPos - Vector3.new(0, 2.8, 0)   -- пятки
+
+        local topVec, topOn = Camera:WorldToViewportPoint(topPos)
+        local botVec, botOn = Camera:WorldToViewportPoint(botPos)
+
+        if not topOn and not botOn then
+            d.box.Visible = false
+            for _, c in ipairs(d.corners) do c.Visible = false end
+            d.nameLabel.Visible = false; d.distLabel.Visible = false
+            d.hpBg.Visible = false; d.hpBar.Visible = false; d.hpText.Visible = false
+            for _, l in ipairs(d.skeletonLines) do l.Visible = false end
+            d.tracer.Visible = false
+            if RadarDots[p] then RadarDots[p].dot.Visible = false end
+            continue
+        end
+
+        local boxH = math.abs(topVec.Y - botVec.Y)
+        local boxW = boxH * 0.55
+        local cx   = topVec.X
+        local top2D = topVec.Y
+        local bot2D = botVec.Y
+        local left  = cx - boxW / 2
+        local right = cx + boxW / 2
+
+        -- Дистанция
+        local dist = myRoot and math.floor((rootPos - myRoot.Position).Magnitude) or 0
+
+        -- HP %
+        local hpPct = math.clamp(hum.Health / hum.MaxHealth, 0, 1)
+        local hpColor = Color3.fromRGB(
+            math.floor(255 * (1 - hpPct)),
+            math.floor(255 * hpPct),
+            50
+        )
+
+        -- ── BOX ─────────────────────────────────────────
+        if BOX_ESP then
+            d.box.PointA = Vector2.new(left,  top2D)
+            d.box.PointB = Vector2.new(right, top2D)
+            d.box.PointC = Vector2.new(right, bot2D)
+            d.box.PointD = Vector2.new(left,  bot2D)
+            d.box.Color = activeColor
+            d.box.Visible = true
+
+            -- Угловые декоры (красивые уголки)
+            local cLen = boxW * 0.22
+            local cH   = boxH * 0.15
+            -- TL
+            d.corners[1].From = Vector2.new(left,        top2D); d.corners[1].To = Vector2.new(left + cLen, top2D)
+            d.corners[2].From = Vector2.new(left,        top2D); d.corners[2].To = Vector2.new(left,        top2D + cH)
+            -- TR
+            d.corners[3].From = Vector2.new(right,       top2D); d.corners[3].To = Vector2.new(right - cLen, top2D)
+            d.corners[4].From = Vector2.new(right,       top2D); d.corners[4].To = Vector2.new(right,        top2D + cH)
+            -- BL
+            d.corners[5].From = Vector2.new(left,        bot2D); d.corners[5].To = Vector2.new(left + cLen, bot2D)
+            d.corners[6].From = Vector2.new(left,        bot2D); d.corners[6].To = Vector2.new(left,        bot2D - cH)
+            -- BR
+            d.corners[7].From = Vector2.new(right,       bot2D); d.corners[7].To = Vector2.new(right - cLen, bot2D)
+            d.corners[8].From = Vector2.new(right,       bot2D); d.corners[8].To = Vector2.new(right,        bot2D - cH)
+            for _, c in ipairs(d.corners) do
+                c.Color = Color3.new(1,1,1)
+                c.Visible = true
+            end
+            -- Основной бокс — полупрозрачный
+            d.box.Transparency = 0.55
+        else
+            d.box.Visible = false
+            for _, c in ipairs(d.corners) do c.Visible = false end
+        end
+
+        -- ── NAME + DIST ──────────────────────────────────
+        if NAME_ESP then
+            local tag = string.format("[ %s ]", p.Name)
+            if DIST_ESP then tag = string.format("[ %s   %dm ]", p.Name, dist) end
+            d.nameLabel.Text = tag
+            d.nameLabel.Position = Vector2.new(cx, top2D - 16)
+            d.nameLabel.Color = activeColor
+            d.nameLabel.Visible = true
+        else
+            d.nameLabel.Visible = false
+        end
+
+        if DIST_ESP and not NAME_ESP then
+            d.distLabel.Text = dist .. "m"
+            d.distLabel.Position = Vector2.new(cx, top2D - 16)
+            d.distLabel.Visible = true
+        else
+            d.distLabel.Visible = false
+        end
+
+        -- ── HP BAR ───────────────────────────────────────
+        if HP_ESP then
+            local barX   = left - 6
+            local barTop = top2D
+            local barBot = bot2D
+            local barFill = barTop + (barBot - barTop) * (1 - hpPct)
+
+            -- Фон
+            d.hpBg.From = Vector2.new(barX, barTop)
+            d.hpBg.To   = Vector2.new(barX, barBot)
+            d.hpBg.Visible = true
+
+            -- Заливка
+            d.hpBar.From  = Vector2.new(barX, barFill)
+            d.hpBar.To    = Vector2.new(barX, barBot)
+            d.hpBar.Color = hpColor
+            d.hpBar.Visible = true
+
+            -- Текст
+            d.hpText.Text     = tostring(math.floor(hum.Health))
+            d.hpText.Position = Vector2.new(barX + 4, barFill - 6)
+            d.hpText.Color    = hpColor
+            d.hpText.Visible  = true
+        else
+            d.hpBg.Visible = false; d.hpBar.Visible = false; d.hpText.Visible = false
+        end
+
+        -- ── SKELETON ─────────────────────────────────────
+        if SKELETON_ESP then
+            local lineIdx = 1
+            for _, pair in ipairs(SkeletonPairs) do
+                local partA = char:FindFirstChild(pair[1])
+                local partB = char:FindFirstChild(pair[2])
+                local line = d.skeletonLines[lineIdx]
+                if partA and partB then
+                    local vA, onA = Camera:WorldToViewportPoint(partA.Position)
+                    local vB, onB = Camera:WorldToViewportPoint(partB.Position)
+                    if onA or onB then
+                        line.From = Vector2.new(vA.X, vA.Y)
+                        line.To   = Vector2.new(vB.X, vB.Y)
+                        line.Color = activeColor
+                        line.Visible = true
+                    else
+                        line.Visible = false
+                    end
+                else
+                    line.Visible = false
+                end
+                lineIdx = lineIdx + 1
+            end
+        else
+            for _, l in ipairs(d.skeletonLines) do l.Visible = false end
+        end
+
+        -- ── TRACER ───────────────────────────────────────
+        if TRACER_ESP then
+            local vRoot, onRoot = Camera:WorldToViewportPoint(rootPos)
+            d.tracer.From = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y)
+            d.tracer.To   = Vector2.new(vRoot.X, vRoot.Y)
+            d.tracer.Color = activeColor
+            d.tracer.Visible = onRoot
+        else
+            d.tracer.Visible = false
+        end
+
+        -- ── RADAR DOT ────────────────────────────────────
+        if RADAR_ESP and myRoot then
+            local rd = GetOrCreateRadarDot(p)
+            local rel = myRoot.CFrame:inverse() * CFrame.new(rootPos)
+            local scale = 70  -- пикселей = 70 studs
+            local rx = math.clamp(rel.X / scale, -1, 1)
+            local rz = math.clamp(-rel.Z / scale, -1, 1)
+            local dx = rx * 65 + 80 - 2.5
+            local dy = rz * 65 + 80 - 2.5
+            rd.dot.Position = UDim2.new(0, dx, 0, dy)
+            rd.dot.BackgroundColor3 = hpColor
+            rd.dot.Visible = true
+            rd.label.Text = p.Name:sub(1,8)
+        elseif RadarDots[p] then
+            RadarDots[p].dot.Visible = false
+        end
+    end
+end
+
+-- ── HOOK INTO RENDER LOOP ────────────────────────
+RunService.RenderStepped:Connect(function()
+    pcall(function()
+        local tickTime = tick()
+        local currentThemeName = Themes[CurrentThemeIndex]
+        local activeColor2 = Color3.new(1,1,1)
+        if currentThemeName == "RGB" then
+            activeColor2 = Color3.fromHSV(tickTime % 3 / 3, 1, 1)
+        elseif ThemeColors[currentThemeName] then
+            activeColor2 = ThemeColors[currentThemeName]
+        end
+        UpdateBoxESP(activeColor2)
+        -- Обновляем цвет радара
+        RadarSelf.BackgroundColor3 = activeColor2
+    end)
+end)
+
+-- ════════════════════════════════════════════════
 Notify("AngerPC V127 LOADED")
