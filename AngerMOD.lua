@@ -1,4 +1,289 @@
--- [[ ⛧ AngerPC ⛧ V127 GROQ-MUSIC ]] --
+-- [[ ⚔ SAURON V1 | by AngerPC-DEV ]] --
+-- LOGIN SYSTEM
+
+local _Players   = game:GetService("Players")
+local _TweenSvc  = game:GetService("TweenService")
+local _LocalPlr  = _Players.LocalPlayer
+local _HttpSvc   = game:GetService("HttpService")
+
+-- ════════════════════════════════════
+-- LOGIN GUI
+-- ════════════════════════════════════
+local LoginGui = Instance.new("ScreenGui")
+LoginGui.Name = "SauronLogin"
+LoginGui.ResetOnSpawn = false
+LoginGui.DisplayOrder = 999
+LoginGui.Parent = _LocalPlr:FindFirstChild("PlayerGui") or game:GetService("CoreGui")
+
+-- Затемнение фона
+local Overlay = Instance.new("Frame", LoginGui)
+Overlay.Size = UDim2.new(1,0,1,0)
+Overlay.BackgroundColor3 = Color3.fromRGB(0,0,0)
+Overlay.BackgroundTransparency = 0.3
+Overlay.BorderSizePixel = 0
+
+-- Главная карточка
+local Card = Instance.new("Frame", LoginGui)
+Card.Size = UDim2.new(0, 360, 0, 320)
+Card.Position = UDim2.new(0.5, -180, 0.5, -160)
+Card.BackgroundColor3 = Color3.fromRGB(8, 8, 8)
+Card.BorderSizePixel = 0
+local cardCorner = Instance.new("UICorner", Card); cardCorner.CornerRadius = UDim.new(0, 14)
+local cardStroke = Instance.new("UIStroke", Card); cardStroke.Thickness = 2; cardStroke.Color = Color3.fromRGB(180, 0, 0)
+
+-- Декоративная полоса сверху
+local TopBar = Instance.new("Frame", Card)
+TopBar.Size = UDim2.new(1, 0, 0, 4)
+TopBar.Position = UDim2.new(0,0,0,0)
+TopBar.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
+TopBar.BorderSizePixel = 0
+Instance.new("UICorner", TopBar).CornerRadius = UDim.new(0, 14)
+
+-- Логотип текст
+local LogoLabel = Instance.new("TextLabel", Card)
+LogoLabel.Size = UDim2.new(1, 0, 0, 60)
+LogoLabel.Position = UDim2.new(0, 0, 0, 12)
+LogoLabel.BackgroundTransparency = 1
+LogoLabel.Text = "⚔ SAURON"
+LogoLabel.Font = Enum.Font.SciFi
+LogoLabel.TextSize = 36
+LogoLabel.TextColor3 = Color3.fromRGB(200, 0, 0)
+LogoLabel.TextStrokeTransparency = 0.6
+LogoLabel.TextStrokeColor3 = Color3.fromRGB(255, 50, 50)
+
+local SubLabel = Instance.new("TextLabel", Card)
+SubLabel.Size = UDim2.new(1, 0, 0, 20)
+SubLabel.Position = UDim2.new(0, 0, 0, 68)
+SubLabel.BackgroundTransparency = 1
+SubLabel.Text = "V1  |  by AngerPC-DEV"
+SubLabel.Font = Enum.Font.SciFi
+SubLabel.TextSize = 13
+SubLabel.TextColor3 = Color3.fromRGB(120, 120, 120)
+
+-- Разделитель
+local Divider = Instance.new("Frame", Card)
+Divider.Size = UDim2.new(0.8, 0, 0, 1)
+Divider.Position = UDim2.new(0.1, 0, 0, 97)
+Divider.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+Divider.BorderSizePixel = 0
+
+-- Лейбл ключа
+local KeyHint = Instance.new("TextLabel", Card)
+KeyHint.Size = UDim2.new(0.9, 0, 0, 20)
+KeyHint.Position = UDim2.new(0.05, 0, 0, 108)
+KeyHint.BackgroundTransparency = 1
+KeyHint.Text = "ВВЕДИ КЛЮЧ ДОСТУПА"
+KeyHint.Font = Enum.Font.SciFi
+KeyHint.TextSize = 12
+KeyHint.TextColor3 = Color3.fromRGB(150, 150, 150)
+
+-- Инпут ключа
+local KeyBox = Instance.new("TextBox", Card)
+KeyBox.Size = UDim2.new(0.9, 0, 0, 44)
+KeyBox.Position = UDim2.new(0.05, 0, 0, 132)
+KeyBox.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+KeyBox.TextColor3 = Color3.new(1,1,1)
+KeyBox.PlaceholderText = "SAURON-XXXXXXXX"
+KeyBox.PlaceholderColor3 = Color3.fromRGB(80,80,80)
+KeyBox.Text = ""
+KeyBox.Font = Enum.Font.SciFi
+KeyBox.TextSize = 16
+KeyBox.ClearTextOnFocus = false
+KeyBox.BorderSizePixel = 0
+Instance.new("UICorner", KeyBox).CornerRadius = UDim.new(0, 8)
+local kbStroke = Instance.new("UIStroke", KeyBox); kbStroke.Thickness = 1.5; kbStroke.Color = Color3.fromRGB(60,60,60)
+
+-- Статус
+local StatusLabel = Instance.new("TextLabel", Card)
+StatusLabel.Size = UDim2.new(0.9, 0, 0, 22)
+StatusLabel.Position = UDim2.new(0.05, 0, 0, 182)
+StatusLabel.BackgroundTransparency = 1
+StatusLabel.Text = "  ожидание ключа..."
+StatusLabel.Font = Enum.Font.SciFi
+StatusLabel.TextSize = 12
+StatusLabel.TextColor3 = Color3.fromRGB(120,120,120)
+StatusLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+-- Кнопка входа
+local LoginBtn = Instance.new("TextButton", Card)
+LoginBtn.Size = UDim2.new(0.9, 0, 0, 44)
+LoginBtn.Position = UDim2.new(0.05, 0, 0, 210)
+LoginBtn.BackgroundColor3 = Color3.fromRGB(160, 0, 0)
+LoginBtn.TextColor3 = Color3.new(1,1,1)
+LoginBtn.Text = "▶  ВОЙТИ"
+LoginBtn.Font = Enum.Font.SciFi
+LoginBtn.TextSize = 16
+LoginBtn.BorderSizePixel = 0
+Instance.new("UICorner", LoginBtn).CornerRadius = UDim.new(0, 10)
+local btnStroke = Instance.new("UIStroke", LoginBtn); btnStroke.Thickness = 1.5; btnStroke.Color = Color3.fromRGB(255,80,80)
+
+-- Прогресс-бар (скрытый)
+local ProgBg = Instance.new("Frame", Card)
+ProgBg.Size = UDim2.new(0.9, 0, 0, 6)
+ProgBg.Position = UDim2.new(0.05, 0, 0, 264)
+ProgBg.BackgroundColor3 = Color3.fromRGB(25,25,25)
+ProgBg.BorderSizePixel = 0
+ProgBg.Visible = false
+Instance.new("UICorner", ProgBg).CornerRadius = UDim.new(0, 3)
+
+local ProgFill = Instance.new("Frame", ProgBg)
+ProgFill.Size = UDim2.new(0, 0, 1, 0)
+ProgFill.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
+ProgFill.BorderSizePixel = 0
+Instance.new("UICorner", ProgFill).CornerRadius = UDim.new(0, 3)
+
+-- Версия внизу
+local VerLabel = Instance.new("TextLabel", Card)
+VerLabel.Size = UDim2.new(1, 0, 0, 20)
+VerLabel.Position = UDim2.new(0, 0, 0, 292)
+VerLabel.BackgroundTransparency = 1
+VerLabel.Text = "SAURON V1  |  secured access"
+VerLabel.Font = Enum.Font.SciFi
+VerLabel.TextSize = 10
+VerLabel.TextColor3 = Color3.fromRGB(50,50,50)
+
+-- Анимация пульса логотипа
+task.spawn(function()
+    while LoginGui.Parent do
+        _TweenSvc:Create(cardStroke, TweenInfo.new(1, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Color = Color3.fromRGB(255,50,50)}):Play()
+        task.wait(1)
+        _TweenSvc:Create(cardStroke, TweenInfo.new(1, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Color = Color3.fromRGB(100,0,0)}):Play()
+        task.wait(1)
+    end
+end)
+
+-- ══════════════════════════════
+-- КЛЮЧИ — загрузка с GitHub
+-- ══════════════════════════════
+local ValidKeys = {}
+
+local function LoadKeys()
+    local ok, result = pcall(function()
+        return game:HttpGet("https://raw.githubusercontent.com/AngerPC-DEV/AngerMOD/main/key.sauron")
+    end)
+    if ok and result and #result > 2 then
+        for line in result:gmatch("[^\r\n]+") do
+            line = line:match("^%s*(.-)%s*$")
+            if line ~= "" then
+                -- Поддержка формата "1 | SAURON-KEY" и просто "SAURON-KEY"
+                local key = line:match("|%s*(.+)$") or line
+                key = key:match("^%s*(.-)%s*$")
+                if key and #key > 3 then
+                    ValidKeys[key] = true
+                end
+            end
+        end
+        StatusLabel.Text = "  ✅ сервер доступен"
+        StatusLabel.TextColor3 = Color3.fromRGB(0,200,80)
+        return true
+    else
+        -- Оффлайн-фолбек: принимаем любой ключ начинающийся с SAURON-
+        StatusLabel.Text = "  ⚠ сервер недоступен (оффлайн режим)"
+        StatusLabel.TextColor3 = Color3.fromRGB(255,180,0)
+        return false
+    end
+end
+
+local KeysLoaded = false
+task.spawn(function()
+    KeysLoaded = LoadKeys()
+end)
+
+-- ══════════════════════════════
+-- ЛОГИКА ВХОДА
+-- ══════════════════════════════
+local function TryLogin()
+    local inputKey = KeyBox.Text:match("^%s*(.-)%s*$")
+    if inputKey == "" then
+        StatusLabel.Text = "  ❌ введи ключ!"
+        StatusLabel.TextColor3 = Color3.fromRGB(255,60,60)
+        _TweenSvc:Create(KeyBox, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(50,10,10)}):Play()
+        task.wait(0.5)
+        _TweenSvc:Create(KeyBox, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(15,15,15)}):Play()
+        return
+    end
+
+    -- Кнопку заблокировать
+    LoginBtn.Active = false
+    LoginBtn.Text = "⏳  ПРОВЕРКА..."
+    StatusLabel.Text = "  🔍 проверяем ключ..."
+    StatusLabel.TextColor3 = Color3.fromRGB(200,180,0)
+
+    -- Анимация прогресс-бара
+    ProgBg.Visible = true
+    _TweenSvc:Create(ProgFill, TweenInfo.new(1.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = UDim2.new(1,0,1,0)}):Play()
+
+    task.wait(1.2)
+
+    -- Проверка ключа
+    local isValid = false
+    if ValidKeys[inputKey] then
+        isValid = true
+    elseif not KeysLoaded then
+        -- Оффлайн: принимаем SAURON-* формат
+        if inputKey:sub(1,7) == "SAURON-" and #inputKey >= 10 then
+            isValid = true
+        end
+    end
+
+    if isValid then
+        -- Анимация успеха
+        StatusLabel.Text = "  ✅ доступ разрешён!"
+        StatusLabel.TextColor3 = Color3.fromRGB(0,255,80)
+        LoginBtn.Text = "✅  ДОБРО ПОЖАЛОВАТЬ"
+        LoginBtn.BackgroundColor3 = Color3.fromRGB(0,130,50)
+        _TweenSvc:Create(cardStroke, TweenInfo.new(0.3), {Color = Color3.fromRGB(0,255,80)}):Play()
+
+        task.wait(0.8)
+        -- Fade out
+        _TweenSvc:Create(Card, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {BackgroundTransparency = 1}):Play()
+        _TweenSvc:Create(Overlay, TweenInfo.new(0.5), {BackgroundTransparency = 1}):Play()
+        for _, v in pairs(Card:GetDescendants()) do
+            if v:IsA("TextLabel") or v:IsA("TextButton") or v:IsA("TextBox") then
+                _TweenSvc:Create(v, TweenInfo.new(0.4), {TextTransparency = 1}):Play()
+            end
+        end
+        task.wait(0.6)
+        LoginGui:Destroy()
+        -- ▼▼▼ MAIN CODE STARTS BELOW ▼▼▼
+    else
+        -- Провал
+        StatusLabel.Text = "  ❌ неверный ключ!"
+        StatusLabel.TextColor3 = Color3.fromRGB(255,60,60)
+        LoginBtn.Text = "▶  ВОЙТИ"
+        LoginBtn.BackgroundColor3 = Color3.fromRGB(160,0,0)
+        LoginBtn.Active = true
+        _TweenSvc:Create(cardStroke, TweenInfo.new(0.2), {Color = Color3.fromRGB(255,0,0)}):Play()
+        -- Тряска карточки
+        local origPos = Card.Position
+        for i = 1, 6 do
+            task.wait(0.04)
+            Card.Position = origPos + UDim2.new(0, (i%2==0 and 8 or -8), 0, 0)
+        end
+        Card.Position = origPos
+        ProgBg.Visible = false
+        ProgFill.Size = UDim2.new(0,0,1,0)
+    end
+end
+
+LoginBtn.MouseButton1Click:Connect(TryLogin)
+KeyBox.FocusLost:Connect(function(entered) if entered then TryLogin() end end)
+
+-- Hover эффекты
+LoginBtn.MouseEnter:Connect(function()
+    _TweenSvc:Create(LoginBtn, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(200,0,0)}):Play()
+end)
+LoginBtn.MouseLeave:Connect(function()
+    _TweenSvc:Create(LoginBtn, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(160,0,0)}):Play()
+end)
+
+-- Ждём пока логин не пройден
+repeat task.wait(0.1) until not LoginGui.Parent or not LoginGui:IsDescendantOf(game)
+
+-- ════════════════════════════════════
+-- КОНЕЦ ЛОГИН СИСТЕМЫ — НАЧАЛО ЧИТА
+-- ════════════════════════════════════
+
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -25,7 +310,7 @@ local SessionID = string.upper(HttpService:GenerateGUID(false):sub(1, 8))
 local ChatHistory = {
     {
         role = "system",
-        content = "Ты — AngerPC, крутой ИИ-бот в Roblox. Создатель: AngerPC-DEV. Характер: дерзкий, краткий."
+        content = "Ты — SAURON, мощный ИИ-бот в Roblox. Создатель: AngerPC-DEV. Характер: дерзкий, краткий, доминирующий."
     }
 }
 
@@ -53,7 +338,7 @@ local MusicPlaying = false
 
 -- [[ 1. GUI SETUP ]] --
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "AngerGUI_V127"
+ScreenGui.Name = "SauronGUI_V1"
 ScreenGui.ResetOnSpawn = false 
 
 if Player:FindFirstChild("PlayerGui") then
@@ -64,7 +349,7 @@ end
 
 -- DEATH SCREEN
 local DeathScreen = Instance.new("ScreenGui", ScreenGui.Parent)
-DeathScreen.Name = "AngerDeath"; DeathScreen.Enabled = false
+DeathScreen.Name = "SauronDeath"; DeathScreen.Enabled = false
 local DeathLabel = Instance.new("TextLabel", DeathScreen); DeathLabel.Size = UDim2.new(1, 0, 1, 0); DeathLabel.BackgroundTransparency = 1; DeathLabel.Text = "WASTED"; DeathLabel.Font = Enum.Font.Creepster; DeathLabel.TextSize = 100; DeathLabel.TextColor3 = Color3.fromRGB(255, 0, 0); DeathLabel.TextStrokeTransparency = 0
 
 -- LISTS & VARS
@@ -204,7 +489,7 @@ end
 local btnTabMain = MakeTab("MAIN"); local btnTabInfo = MakeTab("INFO"); local btnTabAI = MakeTab("AI"); local btnTabWorld = MakeTab("WORLD"); local btnTabUI = MakeTab("UI"); local btnTabMusic = MakeTab("MUSIC")
 
 -- TITLE
-local Title = Instance.new("TextLabel", Main); Title.Size=UDim2.new(1,0,0,45); Title.BackgroundTransparency=1; Title.Text="AngerPC V127 (GROQ+MUSIC)"; Title.Font=Enum.Font.SciFi; Title.TextSize=24; Title.TextColor3=Color3.new(1,1,1); table.insert(RGB_Objects, {Type="Text", Instance=Title})
+local Title = Instance.new("TextLabel", Main); Title.Size=UDim2.new(1,0,0,45); Title.BackgroundTransparency=1; Title.Text="⚔ SAURON V1 ⚔"; Title.Font=Enum.Font.SciFi; Title.TextSize=24; Title.TextColor3=Color3.new(1,1,1); table.insert(RGB_Objects, {Type="Text", Instance=Title})
 
 -- // PAGES // --
 local PageMain = Instance.new("ScrollingFrame", Main); PageMain.Size=UDim2.new(1,-20,0.78,0); PageMain.Position=UDim2.new(0,10,0.18,0); PageMain.BackgroundTransparency=1; PageMain.ScrollBarThickness=2; PageMain.Visible=true; Instance.new("UIListLayout", PageMain).Padding=UDim.new(0,8)
@@ -568,7 +853,7 @@ UnlockBtn.MouseButton1Click:Connect(function()
     UnlockBtn.BackgroundColor3 = UI_Unlocked and Color3.fromRGB(10,50,10) or Color3.fromRGB(30,10,10)
     for _, obj in pairs(Movable_Objects) do obj.Active = UI_Unlocked; obj.Draggable = UI_Unlocked end
 end)
-local ConfigName = "AngerConfig_V127.json"
+local ConfigName = "SauronConfig_V1.json"
 SaveBtn.MouseButton1Click:Connect(function()
     local data = {}; for _, obj in pairs(Movable_Objects) do data[obj.Name] = {X_S=obj.Position.X.Scale, X_O=obj.Position.X.Offset, Y_S=obj.Position.Y.Scale, Y_O=obj.Position.Y.Offset} end
     if writefile then writefile(ConfigName, game:GetService("HttpService"):JSONEncode(data)); SaveBtn.Text="SAVED!"; task.wait(1); SaveBtn.Text="SAVE CONFIG" end
@@ -755,7 +1040,7 @@ Players.PlayerAdded:Connect(function(p) p.Chatted:Connect(function(msg) if p ~= 
 local function SpawnRipple()
     if not Player.Character or not Player.Character:FindFirstChild("HumanoidRootPart") then return end
     local root = Player.Character.HumanoidRootPart; local ray = workspace:Raycast(root.Position, Vector3.new(0, -10, 0), RaycastParams.new())
-    local spawnPos = ray and ray.Position or (root.Position - Vector3.new(0, 2.8, 0)); local p = Instance.new("Part", workspace); p.Name = "AngerRipple"; p.Anchored = true; p.CanCollide = false
+    local spawnPos = ray and ray.Position or (root.Position - Vector3.new(0, 2.8, 0)); local p = Instance.new("Part", workspace); p.Name = "SauronRipple"; p.Anchored = true; p.CanCollide = false
     if States.UsePentagram then
         p.Transparency = 1; p.Size = Vector3.new(1, 0.05, 1); p.CFrame = CFrame.new(spawnPos); local sg = Instance.new("SurfaceGui", p); sg.Face = Enum.NormalId.Top; sg.LightInfluence = 0; sg.AlwaysOnTop = false; local img = Instance.new("ImageLabel", sg); img.Size = UDim2.new(1, 0, 1, 0); img.BackgroundTransparency = 1; img.ImageColor3 = Color3.new(1, 1, 1); 
         local s, a = pcall(function() return getcustomasset("Anger_Pentagram_Circle1.png") end)
@@ -849,7 +1134,7 @@ RunService.RenderStepped:Connect(function()
         
         UpdateESPLines(activeColor)
         
-        local wm = ScreenGui.Parent:FindFirstChild("AngerWatermark"); if wm then wm.Enabled = States.Watermark end
+        local wm = ScreenGui.Parent:FindFirstChild("SauronWatermark"); if wm then wm.Enabled = States.Watermark end
         if PageInfo.Visible then InfoLabel.Text = string.format("SESSION:\nUser: %s\nID: %s\nFPS: %d\nPing: %d ms", Player.Name, SessionID, math.floor(workspace:GetRealPhysicsFPS()), math.floor(Stats.Network.ServerStatsItem["Data Ping"]:GetValue())) end
 
         local char = Player.Character; if not char or not char:FindFirstChild("HumanoidRootPart") then return end
@@ -895,15 +1180,15 @@ RunService.RenderStepped:Connect(function()
         if States.Esp then
             for _, v in pairs(game.Players:GetPlayers()) do
                 if v ~= Player and v.Character then
-                    if not v.Character:FindFirstChild("AngerESP") then
-                        local hl = Instance.new("Highlight", v.Character); hl.Name = "AngerESP"; hl.FillTransparency = 0.5; hl.OutlineTransparency = 0
+                    if not v.Character:FindFirstChild("SauronESP") then
+                        local hl = Instance.new("Highlight", v.Character); hl.Name = "SauronESP"; hl.FillTransparency = 0.5; hl.OutlineTransparency = 0
                     else
-                        v.Character.AngerESP.FillColor = activeColor
+                        v.Character.SauronESP.FillColor = activeColor
                     end
                 end
             end
         else
-            for _, v in pairs(game.Players:GetPlayers()) do if v.Character and v.Character:FindFirstChild("AngerESP") then v.Character.AngerESP:Destroy() end end
+            for _, v in pairs(game.Players:GetPlayers()) do if v.Character and v.Character:FindFirstChild("SauronESP") then v.Character.SauronESP:Destroy() end end
         end
 
         for _, v in pairs(game.Players:GetPlayers()) do 
@@ -929,10 +1214,10 @@ Player.Idled:Connect(function() if States.AntiAfk then VirtualUser:CaptureContro
 
 -- ASSET LOADING
 task.spawn(function()
-    local urlLogo = "https://raw.githubusercontent.com/AngerPC-DEV/AngerMOD/main/AngerMOD.png"
-    local fileLogo = "AngerMOD_Logo_V127.png"
+    local urlLogo = "https://raw.githubusercontent.com/AngerPC-DEV/AngerMOD/main/Sauron_Logo_V1.png"
+    local fileLogo = "Sauron_Logo_V1.png"
     if writefile and readfile then pcall(function() if not isfile(fileLogo) then writefile(fileLogo, game:HttpGet(urlLogo)) end end) end
-    local lg = Instance.new("ScreenGui", ScreenGui.Parent); lg.Name = "AngerWatermark"; local im = Instance.new("ImageLabel", lg); im.Size = UDim2.new(0, 200, 0, 100); im.Position = UDim2.new(0, 10, 0, 10); im.BackgroundTransparency = 1; im.BorderSizePixel = 0; local stroke = Instance.new("UIStroke", im); stroke.Thickness = 3; stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border; stroke.Color = Color3.new(1, 0, 0); table.insert(RGB_Objects, {Type = "Stroke", Instance = stroke})
+    local lg = Instance.new("ScreenGui", ScreenGui.Parent); lg.Name = "SauronWatermark"; local im = Instance.new("ImageLabel", lg); im.Size = UDim2.new(0, 200, 0, 100); im.Position = UDim2.new(0, 10, 0, 10); im.BackgroundTransparency = 1; im.BorderSizePixel = 0; local stroke = Instance.new("UIStroke", im); stroke.Thickness = 3; stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border; stroke.Color = Color3.new(1, 0, 0); table.insert(RGB_Objects, {Type = "Stroke", Instance = stroke})
     local s, a = pcall(function() return getcustomasset(fileLogo) end); if s then im.Image = a else im.Image = urlLogo end
 end)
 
@@ -942,471 +1227,421 @@ task.spawn(function()
     if writefile and readfile and isfile then pcall(function() if not isfile(pentagramName) then writefile(pentagramName, game:HttpGet(pentagramUrl)) end end) end
 end)
 
--- ════════════════════════════════════════════════
--- [[ ⛧ ANGER ESP BOX SYSTEM ⛧ ]]
--- Бокс | Ник | HP | Дистанция | Skeleton | Radar
--- ════════════════════════════════════════════════
 
-local ESPData = {}      -- { box, nameLabel, hpBar, hpBg, hpText, distLabel, skeleton, tracerLine }
-local ESPEnabled = true -- глобальный флаг (уже есть States.Esp, но делаем отдельно)
-local BOX_ESP   = true
-local NAME_ESP  = true
-local HP_ESP    = true
-local DIST_ESP  = true
-local SKELETON_ESP = true
-local TRACER_ESP   = false  -- линия к ногам (tracer)
-local RADAR_ESP    = true
 
--- ── RADAR ──────────────────────────────────────
+
+
+-- ════════════════════════════════════════════════════════
+-- [[ ⚔ SAURON ESP SYSTEM — BOX + TILES UI ]]
+-- ════════════════════════════════════════════════════════
+
+local ESPData    = {}
+local ESPEnabled = true
+local RADAR_ESP  = true
+
+-- ESP состояния — начальные значения
+local ESP_States = {
+    BOX      = true,
+    NAME     = true,
+    HEALTH   = true,
+    DISTANCE = true,
+    SKELETON = false,
+    TRACER   = false,
+    CHAMS    = false,   -- уже есть States.Esp но отдельно для compat
+}
+
+-- ── TILES PANEL (плитки для включения ESP) ──────────────
+local ESPPanel = Instance.new("Frame", ScreenGui)
+ESPPanel.Name = "SauronESPPanel"
+ESPPanel.Size = UDim2.new(0, 352, 0, 130)
+ESPPanel.Position = UDim2.new(0.5, -176, 0, 10)
+ESPPanel.BackgroundColor3 = Color3.fromRGB(8, 8, 8)
+ESPPanel.BackgroundTransparency = 0.15
+ESPPanel.Visible = false
+ESPPanel.Active = true
+ESPPanel.Draggable = true
+style(ESPPanel, 10, 2)
+table.insert(Movable_Objects, ESPPanel)
+
+-- Заголовок панели
+local EPTitle = Instance.new("TextLabel", ESPPanel)
+EPTitle.Size = UDim2.new(1, -70, 0, 22)
+EPTitle.Position = UDim2.new(0, 10, 0, 5)
+EPTitle.BackgroundTransparency = 1
+EPTitle.Text = "⚔  SAURON ESP"
+EPTitle.Font = Enum.Font.SciFi
+EPTitle.TextSize = 14
+EPTitle.TextColor3 = Color3.new(1,1,1)
+EPTitle.TextXAlignment = Enum.TextXAlignment.Left
+table.insert(RGB_Objects, {Type = "Text", Instance = EPTitle})
+
+-- Кнопка закрытия
+local EPClose = Instance.new("TextButton", ESPPanel)
+EPClose.Size = UDim2.new(0, 22, 0, 22)
+EPClose.Position = UDim2.new(1, -28, 0, 5)
+EPClose.BackgroundColor3 = Color3.fromRGB(140,0,0)
+EPClose.Text = "✕"
+EPClose.TextColor3 = Color3.new(1,1,1)
+EPClose.Font = Enum.Font.SciFi
+EPClose.TextSize = 12
+EPClose.BorderSizePixel = 0
+Instance.new("UICorner", EPClose).CornerRadius = UDim.new(0,6)
+EPClose.MouseButton1Click:Connect(function() ESPPanel.Visible = false end)
+
+-- Разделитель
+local EPDiv = Instance.new("Frame", ESPPanel)
+EPDiv.Size = UDim2.new(0.92, 0, 0, 1)
+EPDiv.Position = UDim2.new(0.04, 0, 0, 30)
+EPDiv.BackgroundColor3 = Color3.fromRGB(50,50,50)
+EPDiv.BorderSizePixel = 0
+
+-- Контейнер для плиток
+local TilesContainer = Instance.new("Frame", ESPPanel)
+TilesContainer.Size = UDim2.new(1, -16, 0, 82)
+TilesContainer.Position = UDim2.new(0, 8, 0, 38)
+TilesContainer.BackgroundTransparency = 1
+local tilesLayout = Instance.new("UIListLayout", TilesContainer)
+tilesLayout.FillDirection = Enum.FillDirection.Horizontal
+tilesLayout.Padding = UDim.new(0, 6)
+tilesLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+
+-- Данные плиток
+local TilesDef = {
+    {key = "BOX",      icon = "📦", label = "BOX"},
+    {key = "NAME",     icon = "👤", label = "NAME"},
+    {key = "HEALTH",   icon = "❤",  label = "HP"},
+    {key = "DISTANCE", icon = "📏", label = "DIST"},
+    {key = "SKELETON", icon = "💀", label = "SKEL"},
+    {key = "TRACER",   icon = "➡",  label = "TRACE"},
+    {key = "CHAMS",    icon = "🎨", label = "CHAMS"},
+}
+
+local TileButtons = {}
+
+local function CreateTile(def)
+    local tile = Instance.new("TextButton", TilesContainer)
+    tile.Size = UDim2.new(0, 44, 0, 72)
+    tile.BackgroundColor3 = ESP_States[def.key]
+        and Color3.fromRGB(15, 45, 15)
+        or  Color3.fromRGB(25, 15, 15)
+    tile.TextColor3 = Color3.new(1,1,1)
+    tile.Font = Enum.Font.SciFi
+    tile.Text = ""
+    tile.BorderSizePixel = 0
+    local tc = Instance.new("UICorner", tile); tc.CornerRadius = UDim.new(0,8)
+    local ts = Instance.new("UIStroke", tile); ts.Thickness = 1.5
+    ts.Color = ESP_States[def.key] and Color3.fromRGB(0,200,60) or Color3.fromRGB(80,20,20)
+
+    -- Иконка
+    local iconLbl = Instance.new("TextLabel", tile)
+    iconLbl.Size = UDim2.new(1,0,0,30)
+    iconLbl.Position = UDim2.new(0,0,0,6)
+    iconLbl.BackgroundTransparency = 1
+    iconLbl.Text = def.icon
+    iconLbl.TextSize = 20
+    iconLbl.Font = Enum.Font.SciFi
+
+    -- Имя
+    local nameLbl = Instance.new("TextLabel", tile)
+    nameLbl.Size = UDim2.new(1,0,0,14)
+    nameLbl.Position = UDim2.new(0,0,0,36)
+    nameLbl.BackgroundTransparency = 1
+    nameLbl.Text = def.label
+    nameLbl.TextSize = 9
+    nameLbl.Font = Enum.Font.SciFi
+    nameLbl.TextColor3 = Color3.fromRGB(180,180,180)
+
+    -- Чекбокс индикатор (✅ / ❎)
+    local checkLbl = Instance.new("TextLabel", tile)
+    checkLbl.Size = UDim2.new(1,0,0,16)
+    checkLbl.Position = UDim2.new(0,0,0,52)
+    checkLbl.BackgroundTransparency = 1
+    checkLbl.Text = ESP_States[def.key] and "✅" or "❎"
+    checkLbl.TextSize = 11
+    checkLbl.Font = Enum.Font.SciFi
+
+    tile.MouseButton1Click:Connect(function()
+        ESP_States[def.key] = not ESP_States[def.key]
+        local on = ESP_States[def.key]
+        tile.BackgroundColor3 = on and Color3.fromRGB(15,45,15) or Color3.fromRGB(25,15,15)
+        ts.Color = on and Color3.fromRGB(0,200,60) or Color3.fromRGB(80,20,20)
+        checkLbl.Text = on and "✅" or "❎"
+        Notify(def.label .. (on and " ESP ON" or " ESP OFF"))
+    end)
+
+    -- Hover
+    tile.MouseEnter:Connect(function()
+        TweenService:Create(tile, TweenInfo.new(0.12), {BackgroundColor3 = ESP_States[def.key] and Color3.fromRGB(20,60,20) or Color3.fromRGB(40,20,20)}):Play()
+    end)
+    tile.MouseLeave:Connect(function()
+        TweenService:Create(tile, TweenInfo.new(0.12), {BackgroundColor3 = ESP_States[def.key] and Color3.fromRGB(15,45,15) or Color3.fromRGB(25,15,15)}):Play()
+    end)
+
+    TileButtons[def.key] = {tile = tile, stroke = ts, check = checkLbl}
+end
+
+for _, def in ipairs(TilesDef) do CreateTile(def) end
+
+-- Кнопка открытия ESP Panel (в PageMain)
+local espPanelBtn = Instance.new("TextButton", PageMain)
+espPanelBtn.Size = UDim2.new(1, 0, 0, 40)
+espPanelBtn.BackgroundColor3 = Color3.fromRGB(20, 10, 10)
+espPanelBtn.TextColor3 = Color3.new(1,1,1)
+espPanelBtn.Font = Enum.Font.SciFi
+espPanelBtn.TextSize = 14
+espPanelBtn.Text = "⚔  ОТКРЫТЬ ESP НАСТРОЙКИ"
+style(espPanelBtn, 6, 1)
+espPanelBtn.MouseButton1Click:Connect(function()
+    ESPPanel.Visible = not ESPPanel.Visible
+    if ESPPanel.Visible then Notify("ESP PANEL OPENED") end
+end)
+
+-- ── RADAR ────────────────────────────────────────────────
 local RadarFrame = Instance.new("Frame", ScreenGui)
-RadarFrame.Name = "AngerRadar"
+RadarFrame.Name = "SauronRadar"
 RadarFrame.Size = UDim2.new(0, 160, 0, 160)
 RadarFrame.Position = UDim2.new(1, -175, 0, 10)
 RadarFrame.BackgroundColor3 = Color3.fromRGB(5, 5, 5)
-RadarFrame.BackgroundTransparency = 0.3
+RadarFrame.BackgroundTransparency = 0.25
 RadarFrame.Visible = RADAR_ESP
 style(RadarFrame, 80, 2)
+table.insert(Movable_Objects, RadarFrame)
 
 local RadarTitle = Instance.new("TextLabel", RadarFrame)
-RadarTitle.Size = UDim2.new(1, 0, 0, 16)
+RadarTitle.Size = UDim2.new(1,0,0,18)
 RadarTitle.BackgroundTransparency = 1
-RadarTitle.Text = "⛧ RADAR"
+RadarTitle.Text = "⚔ RADAR"
 RadarTitle.Font = Enum.Font.SciFi
-RadarTitle.TextSize = 12
-RadarTitle.TextColor3 = Color3.new(1, 1, 1)
-table.insert(RGB_Objects, {Type = "Text", Instance = RadarTitle})
+RadarTitle.TextSize = 11
+RadarTitle.TextColor3 = Color3.fromRGB(200,0,0)
 
--- Центральная точка радара (я)
 local RadarSelf = Instance.new("Frame", RadarFrame)
-RadarSelf.Size = UDim2.new(0, 6, 0, 6)
-RadarSelf.Position = UDim2.new(0.5, -3, 0.5, -3)
-RadarSelf.BackgroundColor3 = Color3.fromRGB(0, 255, 100)
+RadarSelf.Size = UDim2.new(0,8,0,8)
+RadarSelf.Position = UDim2.new(0.5,-4,0.5,-4)
+RadarSelf.BackgroundColor3 = Color3.fromRGB(0,255,100)
 RadarSelf.BorderSizePixel = 0
-Instance.new("UICorner", RadarSelf).CornerRadius = UDim.new(1, 0)
+Instance.new("UICorner", RadarSelf).CornerRadius = UDim.new(1,0)
 
-local RadarDots = {}  -- пул точек
+-- Перекрестие радара
+for _, dir in ipairs({{0.5,0.02,0.5,0.46},{0.5,0.54,0.5,0.98},{0.02,0.5,0.46,0.5},{0.54,0.5,0.98,0.5}}) do
+    local l = Instance.new("Frame", RadarFrame)
+    l.Size = (dir[3]-dir[1] < 0.1) and UDim2.new(dir[3]-dir[1],0,0,1) or UDim2.new(0,1,dir[4]-dir[2],0)
+    l.Position = UDim2.new(dir[1],0,dir[2],0)
+    l.BackgroundColor3 = Color3.fromRGB(40,40,40)
+    l.BorderSizePixel = 0
+end
+
+local RadarDots = {}
 
 local function GetOrCreateRadarDot(player)
     if not RadarDots[player] then
         local dot = Instance.new("Frame", RadarFrame)
-        dot.Size = UDim2.new(0, 5, 0, 5)
-        dot.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
+        dot.Size = UDim2.new(0,6,0,6)
+        dot.BackgroundColor3 = Color3.fromRGB(255,50,50)
         dot.BorderSizePixel = 0
         dot.ZIndex = 5
-        Instance.new("UICorner", dot).CornerRadius = UDim.new(1, 0)
+        Instance.new("UICorner", dot).CornerRadius = UDim.new(1,0)
         local lbl = Instance.new("TextLabel", dot)
-        lbl.Size = UDim2.new(0, 50, 0, 12)
-        lbl.Position = UDim2.new(1, 2, 0, -3)
+        lbl.Size = UDim2.new(0,55,0,12)
+        lbl.Position = UDim2.new(1,3,0,-3)
         lbl.BackgroundTransparency = 1
-        lbl.TextColor3 = Color3.new(1, 1, 1)
+        lbl.TextColor3 = Color3.new(1,1,1)
         lbl.Font = Enum.Font.SciFi
         lbl.TextSize = 9
-        lbl.Text = player.Name
-        RadarDots[player] = {dot = dot, label = lbl}
+        lbl.Text = player.Name:sub(1,7)
+        RadarDots[player] = {dot=dot, label=lbl}
     end
     return RadarDots[player]
 end
 
--- ── SKELETON LIMB NAMES ──────────────────────────
+-- ── SKELETON PAIRS ───────────────────────────────────────
 local SkeletonPairs = {
-    {"Head", "UpperTorso"}, {"UpperTorso", "LowerTorso"},
-    {"UpperTorso", "RightUpperArm"}, {"RightUpperArm", "RightLowerArm"}, {"RightLowerArm", "RightHand"},
-    {"UpperTorso", "LeftUpperArm"},  {"LeftUpperArm", "LeftLowerArm"},   {"LeftLowerArm", "LeftHand"},
-    {"LowerTorso", "RightUpperLeg"}, {"RightUpperLeg", "RightLowerLeg"}, {"RightLowerLeg", "RightFoot"},
-    {"LowerTorso", "LeftUpperLeg"},  {"LeftUpperLeg", "LeftLowerLeg"},   {"LeftLowerLeg", "LeftFoot"},
-    -- R6 fallback
-    {"Head", "Torso"}, {"Torso", "Right Arm"}, {"Torso", "Left Arm"},
-    {"Torso", "Right Leg"}, {"Torso", "Left Leg"}
+    {"Head","UpperTorso"},{"UpperTorso","LowerTorso"},
+    {"UpperTorso","RightUpperArm"},{"RightUpperArm","RightLowerArm"},{"RightLowerArm","RightHand"},
+    {"UpperTorso","LeftUpperArm"},{"LeftUpperArm","LeftLowerArm"},{"LeftLowerArm","LeftHand"},
+    {"LowerTorso","RightUpperLeg"},{"RightUpperLeg","RightLowerLeg"},{"RightLowerLeg","RightFoot"},
+    {"LowerTorso","LeftUpperLeg"},{"LeftUpperLeg","LeftLowerLeg"},{"LeftLowerLeg","LeftFoot"},
+    {"Head","Torso"},{"Torso","Right Arm"},{"Torso","Left Arm"},{"Torso","Right Leg"},{"Torso","Left Leg"}
 }
 
--- ── HELPER: создать Drawing-объект ──────────────
-local function NewDrawLine(color, thick, trans)
-    local l = Drawing.new("Line")
-    l.Color = color or Color3.new(1,1,1)
-    l.Thickness = thick or 1
-    l.Transparency = trans or 1
-    l.Visible = false
-    return l
+-- ── CREATE / REMOVE ESP ──────────────────────────────────
+local function NewLine(col,thick,trans)
+    local l=Drawing.new("Line"); l.Color=col or Color3.new(1,1,1); l.Thickness=thick or 1; l.Transparency=trans or 1; l.Visible=false; return l
 end
 
-local function NewDrawQuad(color, thick)
-    local q = Drawing.new("Quad")
-    q.Color = color or Color3.new(1,1,1)
-    q.Thickness = thick or 1.5
-    q.Filled = false
-    q.Visible = false
-    return q
-end
-
--- ── СОЗДАТЬ ESP ДЛЯ ИГРОКА ──────────────────────
 local function CreateBoxESP(player)
     if ESPData[player] then return end
-
-    -- Бокс (Quad)
-    local box = NewDrawQuad(Color3.new(1,1,1), 1.5)
-
-    -- Угловые декоры (4 линии по углам, как в читах)
+    local box  = Drawing.new("Quad"); box.Filled=false; box.Thickness=1; box.Visible=false
     local corners = {}
-    for i = 1, 8 do
-        corners[i] = NewDrawLine(Color3.new(1,1,1), 2.5)
-    end
+    for i=1,8 do corners[i]=NewLine(Color3.new(1,1,1),2.5) end
 
-    -- Ник над боксом
-    local nameLabel = Drawing.new("Text")
-    nameLabel.Size = 14
-    nameLabel.Font = Drawing.Fonts.Plex
-    nameLabel.Center = true
-    nameLabel.Outline = true
-    nameLabel.Color = Color3.new(1,1,1)
-    nameLabel.Visible = false
+    local nameLbl=Drawing.new("Text"); nameLbl.Size=14; nameLbl.Font=Drawing.Fonts.Plex; nameLbl.Center=true; nameLbl.Outline=true; nameLbl.Visible=false
+    local distLbl=Drawing.new("Text"); distLbl.Size=11; distLbl.Font=Drawing.Fonts.Plex; distLbl.Center=true; distLbl.Outline=true; distLbl.Color=Color3.fromRGB(200,200,200); distLbl.Visible=false
+    local hpBg  =NewLine(Color3.fromRGB(10,10,10),5);   hpBg.Transparency=0
+    local hpBar =NewLine(Color3.fromRGB(0,255,80),3);   hpBar.Transparency=0
+    local hpTxt =Drawing.new("Text"); hpTxt.Size=10; hpTxt.Font=Drawing.Fonts.Plex; hpTxt.Outline=true; hpTxt.Visible=false
+    local skelLines={}; for i=1,#SkeletonPairs do skelLines[i]=NewLine(Color3.fromRGB(255,255,100),1) end
+    local tracer=NewLine(Color3.new(1,1,1),1,0.6)
 
-    -- Подпись под ником: дистанция
-    local distLabel = Drawing.new("Text")
-    distLabel.Size = 11
-    distLabel.Font = Drawing.Fonts.Plex
-    distLabel.Center = true
-    distLabel.Outline = true
-    distLabel.Color = Color3.fromRGB(200, 200, 200)
-    distLabel.Visible = false
-
-    -- HP-полоса (фон)
-    local hpBg = Drawing.new("Line")
-    hpBg.Color = Color3.fromRGB(10, 10, 10)
-    hpBg.Thickness = 5
-    hpBg.Transparency = 1
-    hpBg.Visible = false
-
-    -- HP-полоса (заливка)
-    local hpBar = Drawing.new("Line")
-    hpBar.Color = Color3.fromRGB(0, 255, 80)
-    hpBar.Thickness = 3
-    hpBar.Transparency = 1
-    hpBar.Visible = false
-
-    -- HP-текст справа
-    local hpText = Drawing.new("Text")
-    hpText.Size = 10
-    hpText.Font = Drawing.Fonts.Plex
-    hpText.Center = false
-    hpText.Outline = true
-    hpText.Color = Color3.new(1,1,1)
-    hpText.Visible = false
-
-    -- Скелет (14 линий)
-    local skeletonLines = {}
-    for i = 1, #SkeletonPairs do
-        skeletonLines[i] = NewDrawLine(Color3.fromRGB(255, 255, 100), 1)
-    end
-
-    -- Трейсер
-    local tracer = NewDrawLine(Color3.new(1,1,1), 1, 0.7)
-
-    ESPData[player] = {
-        box = box, corners = corners,
-        nameLabel = nameLabel, distLabel = distLabel,
-        hpBg = hpBg, hpBar = hpBar, hpText = hpText,
-        skeletonLines = skeletonLines, tracer = tracer
-    }
+    ESPData[player]={box=box,corners=corners,nameLbl=nameLbl,distLbl=distLbl,hpBg=hpBg,hpBar=hpBar,hpTxt=hpTxt,skelLines=skelLines,tracer=tracer}
 end
 
 local function RemoveBoxESP(player)
-    local d = ESPData[player]
-    if not d then return end
+    local d=ESPData[player]; if not d then return end
     d.box:Remove()
-    for _, c in ipairs(d.corners) do c:Remove() end
-    d.nameLabel:Remove(); d.distLabel:Remove()
-    d.hpBg:Remove(); d.hpBar:Remove(); d.hpText:Remove()
-    for _, l in ipairs(d.skeletonLines) do l:Remove() end
+    for _,c in ipairs(d.corners) do c:Remove() end
+    d.nameLbl:Remove(); d.distLbl:Remove(); d.hpBg:Remove(); d.hpBar:Remove(); d.hpTxt:Remove()
+    for _,l in ipairs(d.skelLines) do l:Remove() end
     d.tracer:Remove()
-    ESPData[player] = nil
-    -- Убираем радар-точку
-    if RadarDots[player] then
-        RadarDots[player].dot:Destroy()
-        RadarDots[player] = nil
-    end
+    ESPData[player]=nil
+    if RadarDots[player] then RadarDots[player].dot:Destroy(); RadarDots[player]=nil end
 end
 
--- ── ИНИЦИАЛИЗАЦИЯ ───────────────────────────────
-for _, p in pairs(Players:GetPlayers()) do
-    if p ~= Player then CreateBoxESP(p) end
-end
+for _,p in pairs(Players:GetPlayers()) do if p~=Player then CreateBoxESP(p) end end
 Players.PlayerAdded:Connect(function(p) CreateBoxESP(p) end)
-Players.PlayerRemoving:Connect(function(p) RemoveBoxESP(p) end)
-
--- ── КНОПКИ ESP В MAIN MENU ──────────────────────
--- Добавляем в PageMain
-
-local function MakeToggleBtn(parent, label, state, callback)
-    local btn = Instance.new("TextButton", parent)
-    btn.Size = UDim2.new(1, 0, 0, 36)
-    btn.BackgroundColor3 = state and Color3.fromRGB(10, 40, 10) or Color3.fromRGB(30, 10, 10)
-    btn.TextColor3 = Color3.new(1,1,1)
-    btn.Font = Enum.Font.SciFi
-    btn.TextSize = 13
-    btn.Text = label .. (state and ": ON" or ": OFF")
-    style(btn, 4, 1)
-    btn.MouseButton1Click:Connect(function()
-        state = not state
-        btn.BackgroundColor3 = state and Color3.fromRGB(10,40,10) or Color3.fromRGB(30,10,10)
-        btn.Text = label .. (state and ": ON" or ": OFF")
-        if callback then callback(state) end
-    end)
-    return btn
-end
-
-local espSection = Instance.new("TextLabel", PageMain)
-espSection.Size = UDim2.new(1, 0, 0, 20)
-espSection.BackgroundTransparency = 1
-espSection.Text = "─── BOX ESP ───"
-espSection.Font = Enum.Font.SciFi
-espSection.TextSize = 12
-espSection.TextColor3 = Color3.fromRGB(180, 180, 180)
-
-MakeToggleBtn(PageMain, "📦 BOX ESP", BOX_ESP, function(v) BOX_ESP = v end)
-MakeToggleBtn(PageMain, "👤 NAME ESP", NAME_ESP, function(v) NAME_ESP = v end)
-MakeToggleBtn(PageMain, "❤ HP BAR", HP_ESP, function(v) HP_ESP = v end)
-MakeToggleBtn(PageMain, "📏 DISTANCE", DIST_ESP, function(v) DIST_ESP = v end)
-MakeToggleBtn(PageMain, "💀 SKELETON", SKELETON_ESP, function(v) SKELETON_ESP = v end)
-MakeToggleBtn(PageMain, "➡ TRACER", TRACER_ESP, function(v) TRACER_ESP = v end)
-MakeToggleBtn(PageMain, "🛰 RADAR", RADAR_ESP, function(v)
-    RADAR_ESP = v
-    RadarFrame.Visible = v
+Players.PlayerRemoving:Connect(function(p)
+    RemoveBoxESP(p)
+    if ESPLines[p] then ESPLines[p]:Remove(); ESPLines[p]=nil end
 end)
 
--- ── UPDATE LOOP ─────────────────────────────────
+-- ── UPDATE FUNCTION ──────────────────────────────────────
 local function UpdateBoxESP(activeColor)
-    local myChar = Player.Character
-    local myRoot = myChar and myChar:FindFirstChild("HumanoidRootPart")
+    local anyOn = ESP_States.BOX or ESP_States.NAME or ESP_States.HEALTH or ESP_States.DISTANCE or ESP_States.SKELETON or ESP_States.TRACER
+    local myChar  = Player.Character
+    local myRoot  = myChar and myChar:FindFirstChild("HumanoidRootPart")
 
-    -- Убираем всё, если ESP выключен
-    if not States.Esp then
-        for _, d in pairs(ESPData) do
-            d.box.Visible = false
-            for _, c in ipairs(d.corners) do c.Visible = false end
-            d.nameLabel.Visible = false; d.distLabel.Visible = false
-            d.hpBg.Visible = false; d.hpBar.Visible = false; d.hpText.Visible = false
-            for _, l in ipairs(d.skeletonLines) do l.Visible = false end
-            d.tracer.Visible = false
-        end
-        for _, rd in pairs(RadarDots) do rd.dot.Visible = false end
-        return
-    end
+    for _,p in pairs(Players:GetPlayers()) do
+        if p==Player then continue end
+        local d=ESPData[p]; if not d then continue end
+        local char=p.Character
+        local hum =char and char:FindFirstChildOfClass("Humanoid")
+        local root=char and char:FindFirstChild("HumanoidRootPart")
+        local head=char and char:FindFirstChild("Head")
 
-    for _, p in pairs(Players:GetPlayers()) do
-        if p == Player then continue end
-        local d = ESPData[p]
-        if not d then continue end
-
-        local char = p.Character
-        local hum = char and char:FindFirstChildOfClass("Humanoid")
-        local root = char and char:FindFirstChild("HumanoidRootPart")
-        local head = char and char:FindFirstChild("Head")
-
-        if not char or not root or not head or not hum or hum.Health <= 0 then
-            d.box.Visible = false
-            for _, c in ipairs(d.corners) do c.Visible = false end
-            d.nameLabel.Visible = false; d.distLabel.Visible = false
-            d.hpBg.Visible = false; d.hpBar.Visible = false; d.hpText.Visible = false
-            for _, l in ipairs(d.skeletonLines) do l.Visible = false end
-            d.tracer.Visible = false
-            if RadarDots[p] then RadarDots[p].dot.Visible = false end
-            continue
+        local function hideAll()
+            d.box.Visible=false
+            for _,c in ipairs(d.corners) do c.Visible=false end
+            d.nameLbl.Visible=false; d.distLbl.Visible=false
+            d.hpBg.Visible=false; d.hpBar.Visible=false; d.hpTxt.Visible=false
+            for _,l in ipairs(d.skelLines) do l.Visible=false end
+            d.tracer.Visible=false
+            if RadarDots[p] then RadarDots[p].dot.Visible=false end
         end
 
-        -- Вычисляем bbox персонажа
-        local rootPos = root.Position
-        local headPos = head.Position
-        local topPos = rootPos + Vector3.new(0, 3.2, 0)   -- чуть выше головы
-        local botPos = rootPos - Vector3.new(0, 2.8, 0)   -- пятки
+        if not anyOn or not char or not root or not head or not hum or hum.Health<=0 then hideAll(); continue end
 
-        local topVec, topOn = Camera:WorldToViewportPoint(topPos)
-        local botVec, botOn = Camera:WorldToViewportPoint(botPos)
+        local rootPos=root.Position
+        local topPos =rootPos+Vector3.new(0,3.2,0)
+        local botPos =rootPos-Vector3.new(0,2.8,0)
+        local topVec,topOn=Camera:WorldToViewportPoint(topPos)
+        local botVec,botOn=Camera:WorldToViewportPoint(botPos)
 
-        if not topOn and not botOn then
-            d.box.Visible = false
-            for _, c in ipairs(d.corners) do c.Visible = false end
-            d.nameLabel.Visible = false; d.distLabel.Visible = false
-            d.hpBg.Visible = false; d.hpBar.Visible = false; d.hpText.Visible = false
-            for _, l in ipairs(d.skeletonLines) do l.Visible = false end
-            d.tracer.Visible = false
-            if RadarDots[p] then RadarDots[p].dot.Visible = false end
-            continue
-        end
+        if not topOn and not botOn then hideAll(); continue end
 
-        local boxH = math.abs(topVec.Y - botVec.Y)
-        local boxW = boxH * 0.55
-        local cx   = topVec.X
-        local top2D = topVec.Y
-        local bot2D = botVec.Y
-        local left  = cx - boxW / 2
-        local right = cx + boxW / 2
+        local boxH=math.abs(topVec.Y-botVec.Y)
+        local boxW=boxH*0.55
+        local cx=topVec.X; local top2D=topVec.Y; local bot2D=botVec.Y
+        local L=cx-boxW/2; local R=cx+boxW/2
+        local dist=myRoot and math.floor((rootPos-myRoot.Position).Magnitude) or 0
+        local hpPct=math.clamp(hum.Health/math.max(hum.MaxHealth,1),0,1)
+        local hpColor=Color3.fromRGB(math.floor(255*(1-hpPct)),math.floor(255*hpPct),50)
 
-        -- Дистанция
-        local dist = myRoot and math.floor((rootPos - myRoot.Position).Magnitude) or 0
+        -- BOX
+        if ESP_States.BOX then
+            d.box.PointA=Vector2.new(L,top2D); d.box.PointB=Vector2.new(R,top2D)
+            d.box.PointC=Vector2.new(R,bot2D); d.box.PointD=Vector2.new(L,bot2D)
+            d.box.Color=activeColor; d.box.Transparency=0.5; d.box.Visible=true
+            -- Угловые декоры
+            local cL=boxW*0.22; local cH=boxH*0.15
+            local cp={{L,top2D,L+cL,top2D},{L,top2D,L,top2D+cH},{R,top2D,R-cL,top2D},{R,top2D,R,top2D+cH},{L,bot2D,L+cL,bot2D},{L,bot2D,L,bot2D-cH},{R,bot2D,R-cL,bot2D},{R,bot2D,R,bot2D-cH}}
+            for i,c in ipairs(d.corners) do c.From=Vector2.new(cp[i][1],cp[i][2]); c.To=Vector2.new(cp[i][3],cp[i][4]); c.Color=Color3.new(1,1,1); c.Visible=true end
+        else d.box.Visible=false; for _,c in ipairs(d.corners) do c.Visible=false end end
 
-        -- HP %
-        local hpPct = math.clamp(hum.Health / hum.MaxHealth, 0, 1)
-        local hpColor = Color3.fromRGB(
-            math.floor(255 * (1 - hpPct)),
-            math.floor(255 * hpPct),
-            50
-        )
+        -- NAME
+        if ESP_States.NAME then
+            local tag = ESP_States.DISTANCE and string.format("[ %s   %dm ]",p.Name,dist) or string.format("[ %s ]",p.Name)
+            d.nameLbl.Text=tag; d.nameLbl.Position=Vector2.new(cx,top2D-17); d.nameLbl.Color=activeColor; d.nameLbl.Visible=true
+            d.distLbl.Visible=false
+        elseif ESP_States.DISTANCE then
+            d.nameLbl.Visible=false
+            d.distLbl.Text=dist.."m"; d.distLbl.Position=Vector2.new(cx,top2D-15); d.distLbl.Visible=true
+        else d.nameLbl.Visible=false; d.distLbl.Visible=false end
 
-        -- ── BOX ─────────────────────────────────────────
-        if BOX_ESP then
-            d.box.PointA = Vector2.new(left,  top2D)
-            d.box.PointB = Vector2.new(right, top2D)
-            d.box.PointC = Vector2.new(right, bot2D)
-            d.box.PointD = Vector2.new(left,  bot2D)
-            d.box.Color = activeColor
-            d.box.Visible = true
+        -- HEALTH BAR
+        if ESP_States.HEALTH then
+            local bx=L-7; local bfill=top2D+(bot2D-top2D)*(1-hpPct)
+            d.hpBg.From=Vector2.new(bx,top2D); d.hpBg.To=Vector2.new(bx,bot2D); d.hpBg.Visible=true
+            d.hpBar.From=Vector2.new(bx,bfill); d.hpBar.To=Vector2.new(bx,bot2D); d.hpBar.Color=hpColor; d.hpBar.Visible=true
+            d.hpTxt.Text=math.floor(hum.Health).."hp"; d.hpTxt.Position=Vector2.new(bx+4,bfill-8); d.hpTxt.Color=hpColor; d.hpTxt.Visible=true
+        else d.hpBg.Visible=false; d.hpBar.Visible=false; d.hpTxt.Visible=false end
 
-            -- Угловые декоры (красивые уголки)
-            local cLen = boxW * 0.22
-            local cH   = boxH * 0.15
-            -- TL
-            d.corners[1].From = Vector2.new(left,        top2D); d.corners[1].To = Vector2.new(left + cLen, top2D)
-            d.corners[2].From = Vector2.new(left,        top2D); d.corners[2].To = Vector2.new(left,        top2D + cH)
-            -- TR
-            d.corners[3].From = Vector2.new(right,       top2D); d.corners[3].To = Vector2.new(right - cLen, top2D)
-            d.corners[4].From = Vector2.new(right,       top2D); d.corners[4].To = Vector2.new(right,        top2D + cH)
-            -- BL
-            d.corners[5].From = Vector2.new(left,        bot2D); d.corners[5].To = Vector2.new(left + cLen, bot2D)
-            d.corners[6].From = Vector2.new(left,        bot2D); d.corners[6].To = Vector2.new(left,        bot2D - cH)
-            -- BR
-            d.corners[7].From = Vector2.new(right,       bot2D); d.corners[7].To = Vector2.new(right - cLen, bot2D)
-            d.corners[8].From = Vector2.new(right,       bot2D); d.corners[8].To = Vector2.new(right,        bot2D - cH)
-            for _, c in ipairs(d.corners) do
-                c.Color = Color3.new(1,1,1)
-                c.Visible = true
+        -- SKELETON
+        if ESP_States.SKELETON then
+            for i,pair in ipairs(SkeletonPairs) do
+                local pA=char:FindFirstChild(pair[1]); local pB=char:FindFirstChild(pair[2]); local ln=d.skelLines[i]
+                if pA and pB then local vA,oA=Camera:WorldToViewportPoint(pA.Position); local vB,oB=Camera:WorldToViewportPoint(pB.Position)
+                    if oA or oB then ln.From=Vector2.new(vA.X,vA.Y); ln.To=Vector2.new(vB.X,vB.Y); ln.Color=activeColor; ln.Visible=true else ln.Visible=false end
+                else ln.Visible=false end
             end
-            -- Основной бокс — полупрозрачный
-            d.box.Transparency = 0.55
+        else for _,l in ipairs(d.skelLines) do l.Visible=false end end
+
+        -- TRACER
+        if ESP_States.TRACER then
+            local vr,on=Camera:WorldToViewportPoint(rootPos)
+            d.tracer.From=Vector2.new(Camera.ViewportSize.X/2,Camera.ViewportSize.Y); d.tracer.To=Vector2.new(vr.X,vr.Y); d.tracer.Color=activeColor; d.tracer.Visible=on
+        else d.tracer.Visible=false end
+
+        -- CHAMS (Highlight)
+        if ESP_States.CHAMS then
+            if not char:FindFirstChild("SauronESP") then
+                local hl=Instance.new("Highlight",char); hl.Name="SauronESP"; hl.FillTransparency=0.5; hl.OutlineTransparency=0
+            else char.SauronESP.FillColor=activeColor end
         else
-            d.box.Visible = false
-            for _, c in ipairs(d.corners) do c.Visible = false end
+            if char:FindFirstChild("SauronESP") then char.SauronESP:Destroy() end
         end
 
-        -- ── NAME + DIST ──────────────────────────────────
-        if NAME_ESP then
-            local tag = string.format("[ %s ]", p.Name)
-            if DIST_ESP then tag = string.format("[ %s   %dm ]", p.Name, dist) end
-            d.nameLabel.Text = tag
-            d.nameLabel.Position = Vector2.new(cx, top2D - 16)
-            d.nameLabel.Color = activeColor
-            d.nameLabel.Visible = true
-        else
-            d.nameLabel.Visible = false
-        end
-
-        if DIST_ESP and not NAME_ESP then
-            d.distLabel.Text = dist .. "m"
-            d.distLabel.Position = Vector2.new(cx, top2D - 16)
-            d.distLabel.Visible = true
-        else
-            d.distLabel.Visible = false
-        end
-
-        -- ── HP BAR ───────────────────────────────────────
-        if HP_ESP then
-            local barX   = left - 6
-            local barTop = top2D
-            local barBot = bot2D
-            local barFill = barTop + (barBot - barTop) * (1 - hpPct)
-
-            -- Фон
-            d.hpBg.From = Vector2.new(barX, barTop)
-            d.hpBg.To   = Vector2.new(barX, barBot)
-            d.hpBg.Visible = true
-
-            -- Заливка
-            d.hpBar.From  = Vector2.new(barX, barFill)
-            d.hpBar.To    = Vector2.new(barX, barBot)
-            d.hpBar.Color = hpColor
-            d.hpBar.Visible = true
-
-            -- Текст
-            d.hpText.Text     = tostring(math.floor(hum.Health))
-            d.hpText.Position = Vector2.new(barX + 4, barFill - 6)
-            d.hpText.Color    = hpColor
-            d.hpText.Visible  = true
-        else
-            d.hpBg.Visible = false; d.hpBar.Visible = false; d.hpText.Visible = false
-        end
-
-        -- ── SKELETON ─────────────────────────────────────
-        if SKELETON_ESP then
-            local lineIdx = 1
-            for _, pair in ipairs(SkeletonPairs) do
-                local partA = char:FindFirstChild(pair[1])
-                local partB = char:FindFirstChild(pair[2])
-                local line = d.skeletonLines[lineIdx]
-                if partA and partB then
-                    local vA, onA = Camera:WorldToViewportPoint(partA.Position)
-                    local vB, onB = Camera:WorldToViewportPoint(partB.Position)
-                    if onA or onB then
-                        line.From = Vector2.new(vA.X, vA.Y)
-                        line.To   = Vector2.new(vB.X, vB.Y)
-                        line.Color = activeColor
-                        line.Visible = true
-                    else
-                        line.Visible = false
-                    end
-                else
-                    line.Visible = false
-                end
-                lineIdx = lineIdx + 1
-            end
-        else
-            for _, l in ipairs(d.skeletonLines) do l.Visible = false end
-        end
-
-        -- ── TRACER ───────────────────────────────────────
-        if TRACER_ESP then
-            local vRoot, onRoot = Camera:WorldToViewportPoint(rootPos)
-            d.tracer.From = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y)
-            d.tracer.To   = Vector2.new(vRoot.X, vRoot.Y)
-            d.tracer.Color = activeColor
-            d.tracer.Visible = onRoot
-        else
-            d.tracer.Visible = false
-        end
-
-        -- ── RADAR DOT ────────────────────────────────────
+        -- RADAR
         if RADAR_ESP and myRoot then
-            local rd = GetOrCreateRadarDot(p)
-            local rel = myRoot.CFrame:inverse() * CFrame.new(rootPos)
-            local scale = 70  -- пикселей = 70 studs
-            local rx = math.clamp(rel.X / scale, -1, 1)
-            local rz = math.clamp(-rel.Z / scale, -1, 1)
-            local dx = rx * 65 + 80 - 2.5
-            local dy = rz * 65 + 80 - 2.5
-            rd.dot.Position = UDim2.new(0, dx, 0, dy)
-            rd.dot.BackgroundColor3 = hpColor
-            rd.dot.Visible = true
-            rd.label.Text = p.Name:sub(1,8)
-        elseif RadarDots[p] then
-            RadarDots[p].dot.Visible = false
-        end
+            local rd=GetOrCreateRadarDot(p)
+            local rel=myRoot.CFrame:inverse()*CFrame.new(rootPos)
+            local rx=math.clamp(rel.X/70,-1,1); local rz=math.clamp(-rel.Z/70,-1,1)
+            rd.dot.Position=UDim2.new(0,rx*65+77,0,rz*65+77)
+            rd.dot.BackgroundColor3=hpColor; rd.dot.Visible=true
+        elseif RadarDots[p] then RadarDots[p].dot.Visible=false end
     end
+
+    -- Обновляем self-dot цвет
+    if RadarSelf then RadarSelf.BackgroundColor3=activeColor end
 end
 
--- ── HOOK INTO RENDER LOOP ────────────────────────
+-- ── HOOK RENDER ──────────────────────────────────────────
 RunService.RenderStepped:Connect(function()
     pcall(function()
-        local tickTime = tick()
-        local currentThemeName = Themes[CurrentThemeIndex]
-        local activeColor2 = Color3.new(1,1,1)
-        if currentThemeName == "RGB" then
-            activeColor2 = Color3.fromHSV(tickTime % 3 / 3, 1, 1)
-        elseif ThemeColors[currentThemeName] then
-            activeColor2 = ThemeColors[currentThemeName]
-        end
-        UpdateBoxESP(activeColor2)
-        -- Обновляем цвет радара
-        RadarSelf.BackgroundColor3 = activeColor2
+        local t=tick(); local cn=Themes[CurrentThemeIndex]; local ac=Color3.new(1,1,1)
+        if cn=="RGB" then ac=Color3.fromHSV(t%3/3,1,1) elseif ThemeColors[cn] then ac=ThemeColors[cn] end
+        UpdateBoxESP(ac)
+        -- Синхронизируем CHAMS с States.Esp (обратная совместимость)
+        if States.Esp ~= ESP_States.CHAMS then States.Esp = ESP_States.CHAMS end
     end)
 end)
 
--- ════════════════════════════════════════════════
-Notify("AngerPC V127 LOADED")
+-- Плитки радара в ESP panel
+local radarTile = Instance.new("TextButton", TilesContainer)
+radarTile.Size = UDim2.new(0,44,0,72)
+radarTile.BackgroundColor3 = RADAR_ESP and Color3.fromRGB(15,45,15) or Color3.fromRGB(25,15,15)
+radarTile.Text = ""; radarTile.BorderSizePixel = 0
+Instance.new("UICorner", radarTile).CornerRadius = UDim.new(0,8)
+local rtStroke=Instance.new("UIStroke",radarTile); rtStroke.Thickness=1.5; rtStroke.Color=RADAR_ESP and Color3.fromRGB(0,200,60) or Color3.fromRGB(80,20,20)
+local ri=Instance.new("TextLabel",radarTile); ri.Size=UDim2.new(1,0,0,30); ri.Position=UDim2.new(0,0,0,6); ri.BackgroundTransparency=1; ri.Text="🛰"; ri.TextSize=20; ri.Font=Enum.Font.SciFi
+local rn=Instance.new("TextLabel",radarTile); rn.Size=UDim2.new(1,0,0,14); rn.Position=UDim2.new(0,0,0,36); rn.BackgroundTransparency=1; rn.Text="RADAR"; rn.TextSize=9; rn.Font=Enum.Font.SciFi; rn.TextColor3=Color3.fromRGB(180,180,180)
+local rc=Instance.new("TextLabel",radarTile); rc.Size=UDim2.new(1,0,0,16); rc.Position=UDim2.new(0,0,0,52); rc.BackgroundTransparency=1; rc.Text=RADAR_ESP and "✅" or "❎"; rc.TextSize=11; rc.Font=Enum.Font.SciFi
+radarTile.MouseButton1Click:Connect(function()
+    RADAR_ESP=not RADAR_ESP; RadarFrame.Visible=RADAR_ESP
+    radarTile.BackgroundColor3=RADAR_ESP and Color3.fromRGB(15,45,15) or Color3.fromRGB(25,15,15)
+    rtStroke.Color=RADAR_ESP and Color3.fromRGB(0,200,60) or Color3.fromRGB(80,20,20)
+    rc.Text=RADAR_ESP and "✅" or "❎"
+    Notify("RADAR " .. (RADAR_ESP and "ON" or "OFF"))
+end)
+
+-- ════════════════════════════════════════════════════════
+Notify("⚔ SAURON V1 LOADED")
