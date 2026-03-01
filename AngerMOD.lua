@@ -1214,11 +1214,49 @@ Player.Idled:Connect(function() if States.AntiAfk then VirtualUser:CaptureContro
 
 -- ASSET LOADING
 task.spawn(function()
-    local urlLogo = "https://raw.githubusercontent.com/AngerPC-DEV/AngerMOD/main/Sauron_Logo_V1.png"
-    local fileLogo = "Sauron_Logo_V1.png"
-    if writefile and readfile then pcall(function() if not isfile(fileLogo) then writefile(fileLogo, game:HttpGet(urlLogo)) end end) end
-    local lg = Instance.new("ScreenGui", ScreenGui.Parent); lg.Name = "SauronWatermark"; local im = Instance.new("ImageLabel", lg); im.Size = UDim2.new(0, 200, 0, 100); im.Position = UDim2.new(0, 10, 0, 10); im.BackgroundTransparency = 1; im.BorderSizePixel = 0; local stroke = Instance.new("UIStroke", im); stroke.Thickness = 3; stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border; stroke.Color = Color3.new(1, 0, 0); table.insert(RGB_Objects, {Type = "Stroke", Instance = stroke})
-    local s, a = pcall(function() return getcustomasset(fileLogo) end); if s then im.Image = a else im.Image = urlLogo end
+    -- AngerMOD.png = твой логотип SAURON (лежит рядом со скриптом)
+    local fileLogo  = "AngerMOD.png"
+    local urlLogoGH = "https://raw.githubusercontent.com/AngerPC-DEV/AngerMOD/main/AngerMOD.png"
+
+    -- Скачиваем файл если его нет локально
+    if writefile and isfile then
+        pcall(function()
+            if not isfile(fileLogo) then
+                local data = game:HttpGet(urlLogoGH, true)
+                writefile(fileLogo, data)
+            end
+        end)
+    end
+
+    -- Создаём Watermark GUI
+    local lg = Instance.new("ScreenGui", ScreenGui.Parent)
+    lg.Name = "SauronWatermark"
+    lg.ResetOnSpawn = false
+    lg.DisplayOrder = 10
+
+    -- ImageLabel для логотипа
+    local im = Instance.new("ImageLabel", lg)
+    im.Size = UDim2.new(0, 280, 0, 70)   -- пропорции SAURON лого ~4:1
+    im.Position = UDim2.new(0, 10, 0, 10)
+    im.BackgroundTransparency = 1
+    im.BorderSizePixel = 0
+    im.ScaleType = Enum.ScaleType.Fit
+    im.ImageTransparency = 0
+
+    -- Попытка 1: getcustomasset (локальный файл через эксплойт)
+    local loaded = false
+    if getcustomasset then
+        local ok, asset = pcall(function() return getcustomasset(fileLogo) end)
+        if ok and asset and asset ~= "" then
+            im.Image = asset
+            loaded = true
+        end
+    end
+
+    -- Попытка 2: прямой raw URL как fallback
+    if not loaded then
+        im.Image = urlLogoGH
+    end
 end)
 
 task.spawn(function()
