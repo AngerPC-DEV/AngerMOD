@@ -336,6 +336,23 @@ local CurrentThemeIndex = 1
 local CurrentSound = nil
 local MusicPlaying = false
 
+-- [[ SCREENGUI INIT ]] --
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "SauronGUI_V1"
+ScreenGui.ResetOnSpawn = false
+if Player:FindFirstChild("PlayerGui") then
+    ScreenGui.Parent = Player.PlayerGui
+else
+    ScreenGui.Parent = game:GetService("CoreGui")
+end
+
+-- Lists
+local RGB_Objects = {}
+local Movable_Objects = {}
+local RecordedPath = {}
+local UI_Unlocked = false
+local ESPLines = {}
+
 -- [[ 1. GUI SETUP — SAURON REDESIGN ]] --
 
 -- ══════════════════════════════════════════════════════
@@ -1324,7 +1341,7 @@ RunService.RenderStepped:Connect(function()
         UpdateESPLines(activeColor)
         
         local wm = ScreenGui.Parent:FindFirstChild("SauronWatermark"); if wm then wm.Enabled = States.Watermark end
-        if PageInfo.Visible then InfoLabel.Text = string.format("SESSION:\nUser: %s\nID: %s\nFPS: %d\nPing: %d ms", Player.Name, SessionID, math.floor(workspace:GetRealPhysicsFPS()), math.floor(Stats.Network.ServerStatsItem["Data Ping"]:GetValue())) end
+        if PageInfo_p.Visible then InfoLabel.Text = string.format("SESSION:\nUser: %s\nID: %s\nFPS: %d\nPing: %d ms", Player.Name, SessionID, math.floor(workspace:GetRealPhysicsFPS()), math.floor(Stats.Network.ServerStatsItem["Data Ping"]:GetValue())) end
 
         local char = Player.Character; if not char or not char:FindFirstChild("HumanoidRootPart") then return end
         local hum = char:FindFirstChild("Humanoid"); local root = char:FindFirstChild("HumanoidRootPart")
