@@ -336,37 +336,656 @@ local CurrentThemeIndex = 1
 local CurrentSound = nil
 local MusicPlaying = false
 
--- [[ 1. GUI SETUP ]] --
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "SauronGUI_V1"
-ScreenGui.ResetOnSpawn = false 
+-- [[ 1. GUI SETUP — SAURON REDESIGN ]] --
 
-if Player:FindFirstChild("PlayerGui") then
-    ScreenGui.Parent = Player.PlayerGui
-else
-    ScreenGui.Parent = game:GetService("CoreGui")
-end
-
--- DEATH SCREEN
-local DeathScreen = Instance.new("ScreenGui", ScreenGui.Parent)
-DeathScreen.Name = "SauronDeath"; DeathScreen.Enabled = false
-local DeathLabel = Instance.new("TextLabel", DeathScreen); DeathLabel.Size = UDim2.new(1, 0, 1, 0); DeathLabel.BackgroundTransparency = 1; DeathLabel.Text = "WASTED"; DeathLabel.Font = Enum.Font.Creepster; DeathLabel.TextSize = 100; DeathLabel.TextColor3 = Color3.fromRGB(255, 0, 0); DeathLabel.TextStrokeTransparency = 0
-
--- LISTS & VARS
-local RGB_Objects = {} 
-local Movable_Objects = {} 
-local RecordedPath = {}
-local UI_Unlocked = false 
-local ESPLines = {}
-
+-- ══════════════════════════════════════════════════════
+-- HELPER FUNCTIONS
+-- ══════════════════════════════════════════════════════
 local function style(obj, radius, thickness)
     local uiC = Instance.new("UICorner", obj); uiC.CornerRadius = UDim.new(0, radius or 6)
-    local uiS = Instance.new("UIStroke", obj); uiS.Color = Color3.fromRGB(60, 60, 60); uiS.Thickness = thickness or 1
+    local uiS = Instance.new("UIStroke", obj); uiS.Color = Color3.fromRGB(40, 40, 40); uiS.Thickness = thickness or 1
     table.insert(RGB_Objects, {Type = "Stroke", Instance = uiS})
     return uiS
 end
 
--- [[ NOTIFICATION SYSTEM ]] --
+-- Ползунок (slider) — возвращает функцию getValue()
+local function MakeSlider(parent, label, minVal, maxVal, defaultVal, decimals, onChange)
+    decimals = decimals or 3
+    local fmt = "%." .. decimals .. "f"
+
+    local container = Instance.new("Frame", parent)
+    container.Size = UDim2.new(1, 0, 0, 58)
+    container.BackgroundColor3 = Color3.fromRGB(14, 14, 14)
+    container.BorderSizePixel = 0
+    style(container, 8, 1)
+
+    local lbl = Instance.new("TextLabel", container)
+    lbl.Size = UDim2.new(0.6, 0, 0, 22)
+    lbl.Position = UDim2.new(0, 10, 0, 4)
+    lbl.BackgroundTransparency = 1
+    lbl.Text = label
+    lbl.Font = Enum.Font.SciFi
+    lbl.TextSize = 13
+    lbl.TextColor3 = Color3.fromRGB(200, 200, 200)
+    lbl.TextXAlignment = Enum.TextXAlignment.Left
+
+    local valLbl = Instance.new("TextLabel", container)
+    valLbl.Size = UDim2.new(0.35, 0, 0, 22)
+    valLbl.Position = UDim2.new(0.63, 0, 0, 4)
+    valLbl.BackgroundTransparency = 1
+    valLbl.Text = string.format(fmt, defaultVal)
+    valLbl.Font = Enum.Font.SciFi
+    valLbl.TextSize = 13
+    valLbl.TextColor3 = Color3.fromRGB(255, 60, 60)
+    valLbl.TextXAlignment = Enum.TextXAlignment.Right
+    table.insert(RGB_Objects, {Type = "Text", Instance = valLbl})
+
+    -- Track
+    local track = Instance.new("Frame", container)
+    track.Size = UDim2.new(1, -20, 0, 6)
+    track.Position = UDim2.new(0, 10, 0, 34)
+    track.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+    track.BorderSizePixel = 0
+    Instance.new("UICorner", track).CornerRadius = UDim.new(1, 0)
+
+    -- Fill
+    local fill = Instance.new("Frame", track)
+    local pct0 = math.clamp((defaultVal - minVal) / (maxVal - minVal), 0, 1)
+    fill.Size = UDim2.new(pct0, 0, 1, 0)
+    fill.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
+    fill.BorderSizePixel = 0
+    Instance.new("UICorner", fill).CornerRadius = UDim.new(1, 0)
+    table.insert(RGB_Objects, {Type = "Part", Instance = fill})
+
+    -- Thumb
+    local thumb = Instance.new("Frame", track)
+    thumb.Size = UDim2.new(0, 14, 0, 14)
+    thumb.Position = UDim2.new(pct0, -7, 0.5, -7)
+    thumb.BackgroundColor3 = Color3.new(1, 1, 1)
+    thumb.BorderSizePixel = 0
+    Instance.new("UICorner", thumb).CornerRadius = UDim.new(1, 0)
+
+    local currentVal = defaultVal
+    local dragging = false
+
+    local function updateFromX(absX)
+        local tPos = track.AbsolutePosition.X
+        local tSize = track.AbsoluteSize.X
+        local pct = math.clamp((absX - tPos) / tSize, 0, 1)
+        currentVal = minVal + pct * (maxVal - minVal)
+        currentVal = math.floor(currentVal * (10^decimals) + 0.5) / (10^decimals)
+        fill.Size = UDim2.new(pct, 0, 1, 0)
+        thumb.Position = UDim2.new(pct, -7, 0.5, -7)
+        valLbl.Text = string.format(fmt, currentVal)
+        if onChange then onChange(currentVal) end
+    end
+
+    thumb.InputBegan:Connect(function(inp)
+        if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+        end
+    end)
+    track.InputBegan:Connect(function(inp)
+        if inp.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true; updateFromX(inp.Position.X)
+        end
+    end)
+    UserInputService.InputChanged:Connect(function(inp)
+        if dragging and (inp.UserInputType == Enum.UserInputType.MouseMovement or inp.UserInputType == Enum.UserInputType.Touch) then
+            updateFromX(inp.Position.X)
+        end
+    end)
+    UserInputService.InputEnded:Connect(function(inp)
+        if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
+            dragging = false
+        end
+    end)
+
+    return container, function() return currentVal end
+end
+
+-- Тогл-кнопка красивая
+local function MakeToggle(parent, label, stateKey, onToggle)
+    local row = Instance.new("Frame", parent)
+    row.Size = UDim2.new(1, 0, 0, 44)
+    row.BackgroundColor3 = Color3.fromRGB(14, 14, 14)
+    row.BorderSizePixel = 0
+    style(row, 8, 1)
+
+    local lbl = Instance.new("TextLabel", row)
+    lbl.Size = UDim2.new(1, -60, 1, 0)
+    lbl.Position = UDim2.new(0, 12, 0, 0)
+    lbl.BackgroundTransparency = 1
+    lbl.Text = label
+    lbl.Font = Enum.Font.SciFi
+    lbl.TextSize = 14
+    lbl.TextColor3 = Color3.fromRGB(220, 220, 220)
+    lbl.TextXAlignment = Enum.TextXAlignment.Left
+
+    -- Пилюля-переключатель
+    local pill = Instance.new("Frame", row)
+    pill.Size = UDim2.new(0, 44, 0, 22)
+    pill.Position = UDim2.new(1, -54, 0.5, -11)
+    pill.BackgroundColor3 = States[stateKey] and Color3.fromRGB(180, 0, 0) or Color3.fromRGB(35, 35, 35)
+    pill.BorderSizePixel = 0
+    Instance.new("UICorner", pill).CornerRadius = UDim.new(1, 0)
+
+    local dot = Instance.new("Frame", pill)
+    dot.Size = UDim2.new(0, 16, 0, 16)
+    dot.Position = States[stateKey] and UDim2.new(1, -19, 0.5, -8) or UDim2.new(0, 3, 0.5, -8)
+    dot.BackgroundColor3 = Color3.new(1, 1, 1)
+    dot.BorderSizePixel = 0
+    Instance.new("UICorner", dot).CornerRadius = UDim.new(1, 0)
+
+    local btn = Instance.new("TextButton", row)
+    btn.Size = UDim2.new(1, 0, 1, 0)
+    btn.BackgroundTransparency = 1
+    btn.Text = ""
+
+    btn.MouseButton1Click:Connect(function()
+        if stateKey then States[stateKey] = not States[stateKey] end
+        local on = stateKey and States[stateKey] or false
+        if onToggle then on = onToggle(not (stateKey and not States[stateKey])) end
+        TweenService:Create(pill, TweenInfo.new(0.15), {BackgroundColor3 = on and Color3.fromRGB(180,0,0) or Color3.fromRGB(35,35,35)}):Play()
+        TweenService:Create(dot, TweenInfo.new(0.15), {Position = on and UDim2.new(1,-19,0.5,-8) or UDim2.new(0,3,0.5,-8)}):Play()
+        Notify(label .. (on and " ON" or " OFF"))
+    end)
+
+    return row, pill, dot
+end
+
+-- Секция-заголовок
+local function MakeSection(parent, text)
+    local s = Instance.new("TextLabel", parent)
+    s.Size = UDim2.new(1, 0, 0, 24)
+    s.BackgroundTransparency = 1
+    s.Text = "  " .. text
+    s.Font = Enum.Font.SciFi
+    s.TextSize = 11
+    s.TextColor3 = Color3.fromRGB(120, 120, 120)
+    s.TextXAlignment = Enum.TextXAlignment.Left
+    return s
+end
+
+-- ══════════════════════════════════════════════════════
+-- ГЛАВНЫЙ GUI
+-- ══════════════════════════════════════════════════════
+local Main = Instance.new("Frame", ScreenGui)
+Main.Name = "SauronMain"
+Main.Size = UDim2.new(0, 540, 0, 520)
+Main.Position = UDim2.new(0.15, 0, 0.15, 0)
+Main.BackgroundColor3 = Color3.fromRGB(9, 9, 9)
+Main.BorderSizePixel = 0
+Main.Visible = true
+Main.Active = true
+Main.Draggable = true
+style(Main, 12, 2)
+table.insert(Movable_Objects, Main)
+
+-- Верхняя полоса
+local TopBar = Instance.new("Frame", Main)
+TopBar.Size = UDim2.new(1, 0, 0, 46)
+TopBar.BackgroundColor3 = Color3.fromRGB(13, 13, 13)
+TopBar.BorderSizePixel = 0
+Instance.new("UICorner", TopBar).CornerRadius = UDim.new(0, 12)
+
+local TitleLbl = Instance.new("TextLabel", TopBar)
+TitleLbl.Size = UDim2.new(0, 200, 1, 0)
+TitleLbl.Position = UDim2.new(0, 16, 0, 0)
+TitleLbl.BackgroundTransparency = 1
+TitleLbl.Text = "⚔  SAURON"
+TitleLbl.Font = Enum.Font.SciFi
+TitleLbl.TextSize = 20
+TitleLbl.TextColor3 = Color3.fromRGB(220, 0, 0)
+TitleLbl.TextXAlignment = Enum.TextXAlignment.Left
+table.insert(RGB_Objects, {Type = "Text", Instance = TitleLbl})
+
+local VerLbl = Instance.new("TextLabel", TopBar)
+VerLbl.Size = UDim2.new(0, 60, 1, 0)
+VerLbl.Position = UDim2.new(0, 116, 0, 0)
+VerLbl.BackgroundTransparency = 1
+VerLbl.Text = "V1"
+VerLbl.Font = Enum.Font.SciFi
+VerLbl.TextSize = 11
+VerLbl.TextColor3 = Color3.fromRGB(80, 80, 80)
+VerLbl.TextXAlignment = Enum.TextXAlignment.Left
+
+-- Кнопка закрыть
+local CloseBtn = Instance.new("TextButton", TopBar)
+CloseBtn.Size = UDim2.new(0, 28, 0, 28)
+CloseBtn.Position = UDim2.new(1, -38, 0.5, -14)
+CloseBtn.BackgroundColor3 = Color3.fromRGB(140, 0, 0)
+CloseBtn.Text = "✕"
+CloseBtn.TextColor3 = Color3.new(1,1,1)
+CloseBtn.Font = Enum.Font.SciFi
+CloseBtn.TextSize = 12
+CloseBtn.BorderSizePixel = 0
+Instance.new("UICorner", CloseBtn).CornerRadius = UDim.new(0, 8)
+CloseBtn.MouseButton1Click:Connect(function() Main.Visible = false end)
+
+-- ══════════════════════════════════════════════════════
+-- ЛЕВАЯ ПАНЕЛЬ (вкладки)
+-- ══════════════════════════════════════════════════════
+local LeftPanel = Instance.new("Frame", Main)
+LeftPanel.Size = UDim2.new(0, 110, 1, -54)
+LeftPanel.Position = UDim2.new(0, 8, 0, 50)
+LeftPanel.BackgroundColor3 = Color3.fromRGB(12, 12, 12)
+LeftPanel.BorderSizePixel = 0
+Instance.new("UICorner", LeftPanel).CornerRadius = UDim.new(0, 10)
+
+local TabLayout = Instance.new("UIListLayout", LeftPanel)
+TabLayout.Padding = UDim.new(0, 4)
+TabLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+Instance.new("UIPadding", LeftPanel).PaddingTop = UDim.new(0, 8)
+
+-- ══════════════════════════════════════════════════════
+-- ПРАВАЯ ОБЛАСТЬ (контент)
+-- ══════════════════════════════════════════════════════
+local ContentArea = Instance.new("Frame", Main)
+ContentArea.Size = UDim2.new(1, -126, 1, -54)
+ContentArea.Position = UDim2.new(0, 122, 0, 50)
+ContentArea.BackgroundTransparency = 1
+ContentArea.ClipsDescendants = true
+
+-- ══════════════════════════════════════════════════════
+-- ВКЛАДКИ ОПРЕДЕЛЕНИЕ
+-- ══════════════════════════════════════════════════════
+local Tabs = {}
+local CurrentTab = nil
+
+local TabDefs = {
+    {id="ESP",    icon="👁", label="ESP"},
+    {id="PLAYER", icon="⚡", label="PLAYER"},
+    {id="VISUAL", icon="🎨", label="VISUAL"},
+    {id="AI",     icon="🤖", label="AI-SN"},
+    {id="INFO",   icon="📊", label="INFO"},
+    {id="WORLD",  icon="🌍", label="WORLD"},
+    {id="UI",     icon="🔧", label="UI"},
+}
+
+local function SwitchTab(id)
+    for tid, t in pairs(Tabs) do
+        local on = tid == id
+        -- Кнопка подсветка
+        TweenService:Create(t.btn, TweenInfo.new(0.15), {
+            BackgroundColor3 = on and Color3.fromRGB(160,0,0) or Color3.fromRGB(20,20,20)
+        }):Play()
+        t.btn.TextColor3 = on and Color3.new(1,1,1) or Color3.fromRGB(130,130,130)
+        -- Страница
+        t.page.Visible = on
+    end
+    CurrentTab = id
+end
+
+local function MakeTabBtn(def)
+    local btn = Instance.new("TextButton", LeftPanel)
+    btn.Size = UDim2.new(0, 90, 0, 56)
+    btn.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+    btn.BorderSizePixel = 0
+    btn.Text = ""
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 8)
+
+    local iLbl = Instance.new("TextLabel", btn)
+    iLbl.Size = UDim2.new(1,0,0,28)
+    iLbl.Position = UDim2.new(0,0,0,6)
+    iLbl.BackgroundTransparency = 1
+    iLbl.Text = def.icon
+    iLbl.TextSize = 18
+    iLbl.Font = Enum.Font.SciFi
+
+    local nLbl = Instance.new("TextLabel", btn)
+    nLbl.Size = UDim2.new(1,0,0,18)
+    nLbl.Position = UDim2.new(0,0,0,32)
+    nLbl.BackgroundTransparency = 1
+    nLbl.Text = def.label
+    nLbl.TextSize = 10
+    nLbl.Font = Enum.Font.SciFi
+    nLbl.TextColor3 = Color3.fromRGB(130,130,130)
+
+    -- Активный индикатор (левая полоска)
+    local ind = Instance.new("Frame", btn)
+    ind.Size = UDim2.new(0, 3, 0.6, 0)
+    ind.Position = UDim2.new(0, 0, 0.2, 0)
+    ind.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
+    ind.BorderSizePixel = 0
+    Instance.new("UICorner", ind).CornerRadius = UDim.new(1, 0)
+    ind.Visible = false
+
+    -- Страница контента
+    local page = Instance.new("ScrollingFrame", ContentArea)
+    page.Size = UDim2.new(1, 0, 1, 0)
+    page.BackgroundTransparency = 1
+    page.ScrollBarThickness = 3
+    page.ScrollBarImageColor3 = Color3.fromRGB(150,0,0)
+    page.CanvasSize = UDim2.new(0, 0, 0, 0)
+    page.AutomaticCanvasSize = Enum.AutomaticSize.Y
+    page.Visible = false
+    local layout = Instance.new("UIListLayout", page)
+    layout.Padding = UDim.new(0, 6)
+    layout.SortOrder = Enum.SortOrder.LayoutOrder
+    Instance.new("UIPadding", page).PaddingRight = UDim.new(0, 6)
+
+    btn.MouseButton1Click:Connect(function()
+        SwitchTab(def.id)
+        ind.Visible = true
+        for tid, t in pairs(Tabs) do
+            if tid ~= def.id then t.ind.Visible = false end
+        end
+    end)
+
+    return btn, page, ind
+end
+
+-- Создаём все вкладки
+for _, def in ipairs(TabDefs) do
+    local btn, page, ind = MakeTabBtn(def)
+    Tabs[def.id] = {btn=btn, page=page, ind=ind, def=def}
+end
+
+-- Ссылки на страницы
+local PageESP    = Tabs["ESP"].page
+local PagePlayer = Tabs["PLAYER"].page
+local PageVisual = Tabs["VISUAL"].page
+local PageAI_p   = Tabs["AI"].page
+local PageInfo_p = Tabs["INFO"].page
+local PageWorld  = Tabs["WORLD"].page
+local PageUI_p   = Tabs["UI"].page
+
+-- Compat aliases (используются в logic секции ниже)
+local PageMain  = PagePlayer  -- старый PageMain → PLAYER
+local PageInfo  = PageInfo_p
+local PageAI    = PageAI_p
+local PageUI    = PageUI_p
+
+-- ══════════════════════════════════════════════════════
+-- КОНТЕНТ: ESP
+-- ══════════════════════════════════════════════════════
+MakeSection(PageESP, "BOX ESP")
+
+local function MakeESPToggle(parent, label, key)
+    local row, pill, dot = MakeToggle(parent, label, nil, function(v)
+        ESP_States = ESP_States or {}
+        ESP_States[key] = v
+        return v
+    end)
+    return row
+end
+
+-- Мы создадим настоящие ESP тогглы после определения ESP_States
+-- Пока создаём контейнер и сохраним функцию
+local ESPTogglesDef = {
+    {"📦  BOX",       "BOX"},
+    {"👤  NAME",      "NAME"},
+    {"❤  HEALTH BAR","HEALTH"},
+    {"📏  DISTANCE",  "DISTANCE"},
+    {"💀  SKELETON",  "SKELETON"},
+    {"➡  TRACER",    "TRACER"},
+    {"🎨  CHAMS",     "CHAMS"},
+    {"🛰  RADAR",     "RADAR_E"},
+}
+
+-- ══════════════════════════════════════════════════════
+-- КОНТЕНТ: PLAYER (бывший MAIN)
+-- ══════════════════════════════════════════════════════
+MakeSection(PagePlayer, "COMBAT")
+
+-- Aim
+local _, getSmooth
+do
+    local _, gs
+    _, gs = MakeSlider(PagePlayer, "AIM SMOOTH", 0.01, 1.0, 0.15, 2, function(v) valSmooth = v end)
+    getSmooth = gs
+end
+MakeToggle(PagePlayer, "HUMAN AIM", "Aim")
+MakeToggle(PagePlayer, "ANTI KNOCKBACK", "AntiKnockback")
+MakeToggle(PagePlayer, "KILL AURA", "KillAura")
+
+MakeSection(PagePlayer, "HITBOX")
+local hitboxSlider, getHitbox = MakeSlider(PagePlayer, "HITBOX SIZE", 0.0, 100.0, 5.0, 3, function(v) valHitbox = v end)
+MakeToggle(PagePlayer, "BIG HITBOX", "Hitbox")
+
+MakeSection(PagePlayer, "MOVEMENT")
+local speedSlider, getSpeed = MakeSlider(PagePlayer, "RAGE SPEED", 0.0, 100.0, 50.0, 3, function(v) valSpeed = v end)
+MakeToggle(PagePlayer, "RAGE SPEED", "Spd")
+
+local bypassSlider, getBypass = MakeSlider(PagePlayer, "BYPASS SPEED", 0.0, 100.0, 0.11, 3, function(v) valBypassSpeed = v end)
+MakeToggle(PagePlayer, "SPEED BYPASS", "SpdBypass")
+
+local flySlider, getFly = MakeSlider(PagePlayer, "FLY SPEED", 0.0, 100.0, 5.0, 3, function(v) valFlySpeed = v end)
+MakeToggle(PagePlayer, "FLY BYPASS", "Fly")
+
+local jumpSlider, getJump = MakeSlider(PagePlayer, "JUMP POWER", 0.0, 100.0, 100.0, 3, function(v) valJumpPower = v end)
+MakeToggle(PagePlayer, "SUPER JUMP", "Jump")
+MakeToggle(PagePlayer, "INF JUMP", "InfJump")
+MakeToggle(PagePlayer, "INF ZOOM", "UnlockAll")
+MakeToggle(PagePlayer, "ANTI AFK", "AntiAfk")
+
+-- ══════════════════════════════════════════════════════
+-- КОНТЕНТ: VISUAL
+-- ══════════════════════════════════════════════════════
+MakeSection(PageVisual, "THEME")
+local btnTheme = Instance.new("TextButton", PageVisual)
+btnTheme.Size = UDim2.new(1, 0, 0, 44)
+btnTheme.BackgroundColor3 = Color3.fromRGB(20, 10, 10)
+btnTheme.TextColor3 = Color3.new(1,1,1)
+btnTheme.Font = Enum.Font.SciFi
+btnTheme.TextSize = 14
+btnTheme.Text = "🎨  THEME: " .. Themes[CurrentThemeIndex]
+btnTheme.BorderSizePixel = 0
+style(btnTheme, 8, 1)
+btnTheme.MouseButton1Click:Connect(function()
+    CurrentThemeIndex = CurrentThemeIndex + 1
+    if CurrentThemeIndex > #Themes then CurrentThemeIndex = 1 end
+    btnTheme.Text = "🎨  THEME: " .. Themes[CurrentThemeIndex]
+end)
+
+MakeSection(PageVisual, "EFFECTS")
+MakeToggle(PageVisual, "SHOW LOGO", "Watermark")
+MakeToggle(PageVisual, "FULLBRIGHT", "Fullbright")
+MakeToggle(PageVisual, "RGB SKIN", "RGB")
+
+local rippleSlider, getRipple = MakeSlider(PageVisual, "RIPPLE SIZE", 0.0, 100.0, 15.0, 3, function(v) valRipple = v end)
+MakeToggle(PageVisual, "JUMP RIPPLE", "Circle")
+MakeToggle(PageVisual, "PENTAGRAM MODE", "UsePentagram")
+
+local ghostSlider, getGhost = MakeSlider(PageVisual, "GHOST RATE", 0.01, 2.0, 0.05, 3, function(v) valGhostRate = v end)
+MakeToggle(PageVisual, "GHOST TRAIL", "Ghosts")
+
+-- ══════════════════════════════════════════════════════
+-- КОНТЕНТ: AI-SN
+-- ══════════════════════════════════════════════════════
+MakeSection(PageAI_p, "GROQ AI")
+
+local AIKeyBox = Instance.new("TextBox", PageAI_p)
+AIKeyBox.Size = UDim2.new(1, 0, 0, 44)
+AIKeyBox.BackgroundColor3 = Color3.fromRGB(14, 14, 14)
+AIKeyBox.TextColor3 = Color3.new(1,1,1)
+AIKeyBox.PlaceholderText = "GROQ API KEY"
+AIKeyBox.PlaceholderColor3 = Color3.fromRGB(60,60,60)
+AIKeyBox.Text = ""
+AIKeyBox.Font = Enum.Font.SciFi
+AIKeyBox.TextSize = 13
+AIKeyBox.ClearTextOnFocus = false
+AIKeyBox.BorderSizePixel = 0
+style(AIKeyBox, 8, 1)
+
+local ModelBtn = Instance.new("TextButton", PageAI_p)
+ModelBtn.Size = UDim2.new(1, 0, 0, 44)
+ModelBtn.BackgroundColor3 = Color3.fromRGB(20, 10, 10)
+ModelBtn.TextColor3 = Color3.new(1,1,1)
+ModelBtn.Text = "MODEL: " .. GroqModels[CurrentModelIndex]
+ModelBtn.Font = Enum.Font.SciFi
+ModelBtn.TextSize = 13
+ModelBtn.BorderSizePixel = 0
+style(ModelBtn, 8, 1)
+
+MakeSection(PageAI_p, "BOTS")
+local AIToggleBtn_row = MakeToggle(PageAI_p, "AI AUTOREPLY", "AI")
+local FriendBtn_row   = MakeToggle(PageAI_p, "FRIEND BOT", "FriendBot")
+
+MakeSection(PageAI_p, "MACRO")
+local recRow = Instance.new("Frame", PageAI_p)
+recRow.Size = UDim2.new(1, 0, 0, 44)
+recRow.BackgroundTransparency = 1
+
+local RecBtn = Instance.new("TextButton", recRow)
+RecBtn.Size = UDim2.new(0.48, -3, 1, 0)
+RecBtn.BackgroundColor3 = Color3.fromRGB(50, 10, 10)
+RecBtn.TextColor3 = Color3.new(1,1,1)
+RecBtn.Text = "⏺  RECORD"
+RecBtn.Font = Enum.Font.SciFi
+RecBtn.TextSize = 13
+RecBtn.BorderSizePixel = 0
+style(RecBtn, 8, 1)
+
+local PlayBtn = Instance.new("TextButton", recRow)
+PlayBtn.Size = UDim2.new(0.48, -3, 1, 0)
+PlayBtn.Position = UDim2.new(0.52, 3, 0, 0)
+PlayBtn.BackgroundColor3 = Color3.fromRGB(10, 40, 10)
+PlayBtn.TextColor3 = Color3.new(1,1,1)
+PlayBtn.Text = "▶  PLAY"
+PlayBtn.Font = Enum.Font.SciFi
+PlayBtn.TextSize = 13
+PlayBtn.BorderSizePixel = 0
+style(PlayBtn, 8, 1)
+
+local LoopBtn_row = MakeToggle(PageAI_p, "LOOP PLAYBACK", "LoopPlay")
+
+local AIStatus = Instance.new("TextLabel", PageAI_p)
+AIStatus.Size = UDim2.new(1, 0, 0, 28)
+AIStatus.BackgroundTransparency = 1
+AIStatus.Text = "  STATUS: IDLE"
+AIStatus.Font = Enum.Font.SciFi
+AIStatus.TextSize = 12
+AIStatus.TextColor3 = Color3.fromRGB(100,100,100)
+AIStatus.TextXAlignment = Enum.TextXAlignment.Left
+
+-- ══════════════════════════════════════════════════════
+-- КОНТЕНТ: INFO
+-- ══════════════════════════════════════════════════════
+local InfoLabel = Instance.new("TextLabel", PageInfo_p)
+InfoLabel.Size = UDim2.new(1, 0, 0, 300)
+InfoLabel.BackgroundTransparency = 1
+InfoLabel.TextColor3 = Color3.new(1,1,1)
+InfoLabel.Font = Enum.Font.SciFi
+InfoLabel.TextSize = 14
+InfoLabel.TextYAlignment = Enum.TextYAlignment.Top
+InfoLabel.TextXAlignment = Enum.TextXAlignment.Left
+InfoLabel.Text = "  Loading..."
+InfoLabel.RichText = false
+
+-- ══════════════════════════════════════════════════════
+-- КОНТЕНТ: WORLD
+-- ══════════════════════════════════════════════════════
+MakeSection(PageWorld, "ENVIRONMENT")
+
+local FogBtn = Instance.new("TextButton", PageWorld)
+FogBtn.Size = UDim2.new(1,0,0,44); FogBtn.Text = "REMOVE FOG: OFF"
+FogBtn.BackgroundColor3 = Color3.fromRGB(30,10,10); FogBtn.TextColor3 = Color3.new(1,1,1)
+FogBtn.Font = Enum.Font.SciFi; FogBtn.TextSize = 14; FogBtn.BorderSizePixel = 0; style(FogBtn,8,1)
+
+local AmbientBtn = Instance.new("TextButton", PageWorld)
+AmbientBtn.Size = UDim2.new(1,0,0,44); AmbientBtn.Text = "AMBIENT SYNC: OFF"
+AmbientBtn.BackgroundColor3 = Color3.fromRGB(30,10,10); AmbientBtn.TextColor3 = Color3.new(1,1,1)
+AmbientBtn.Font = Enum.Font.SciFi; AmbientBtn.TextSize = 14; AmbientBtn.BorderSizePixel = 0; style(AmbientBtn,8,1)
+
+MakeSection(PageWorld, "SKY")
+local SkyBox = Instance.new("TextBox", PageWorld)
+SkyBox.Size = UDim2.new(1,0,0,44); SkyBox.PlaceholderText = "CUSTOM SKY ID"; SkyBox.Text = ""
+SkyBox.BackgroundColor3 = Color3.fromRGB(14,14,14); SkyBox.TextColor3 = Color3.new(1,1,1)
+SkyBox.Font = Enum.Font.SciFi; SkyBox.TextSize = 14; SkyBox.BorderSizePixel = 0; style(SkyBox,8,1)
+
+local SetSkyBtn = Instance.new("TextButton", PageWorld)
+SetSkyBtn.Size = UDim2.new(1,0,0,44); SetSkyBtn.Text = "APPLY CUSTOM SKY"
+SetSkyBtn.BackgroundColor3 = Color3.fromRGB(20,20,20); SetSkyBtn.TextColor3 = Color3.new(1,1,1)
+SetSkyBtn.Font = Enum.Font.SciFi; SetSkyBtn.TextSize = 14; SetSkyBtn.BorderSizePixel = 0; style(SetSkyBtn,8,1)
+
+local SpaceSkyBtn = Instance.new("TextButton", PageWorld)
+SpaceSkyBtn.Size = UDim2.new(1,0,0,44); SpaceSkyBtn.Text = "🌌  SET SPACE SKY"
+SpaceSkyBtn.BackgroundColor3 = Color3.fromRGB(15,15,30); SpaceSkyBtn.TextColor3 = Color3.new(1,1,1)
+SpaceSkyBtn.Font = Enum.Font.SciFi; SpaceSkyBtn.TextSize = 14; SpaceSkyBtn.BorderSizePixel = 0; style(SpaceSkyBtn,8,1)
+
+MakeSection(PageWorld, "FLY CONTROL")
+local flyRow = Instance.new("Frame", PageWorld)
+flyRow.Size = UDim2.new(1,0,0,44); flyRow.BackgroundTransparency = 1
+local btnUp = Instance.new("TextButton", flyRow); btnUp.Size=UDim2.new(0.48,-3,1,0); btnUp.Text="▲  FLY UP"; btnUp.BackgroundColor3=Color3.fromRGB(20,20,20); btnUp.TextColor3=Color3.new(1,1,1); btnUp.Font=Enum.Font.SciFi; btnUp.TextSize=13; btnUp.BorderSizePixel=0; style(btnUp,8,1)
+local btnDn = Instance.new("TextButton", flyRow); btnDn.Size=UDim2.new(0.48,-3,1,0); btnDn.Position=UDim2.new(0.52,3,0,0); btnDn.Text="▼  FLY DOWN"; btnDn.BackgroundColor3=Color3.fromRGB(20,20,20); btnDn.TextColor3=Color3.new(1,1,1); btnDn.Font=Enum.Font.SciFi; btnDn.TextSize=13; btnDn.BorderSizePixel=0; style(btnDn,8,1)
+
+-- ══════════════════════════════════════════════════════
+-- КОНТЕНТ: UI
+-- ══════════════════════════════════════════════════════
+MakeSection(PageUI_p, "WINDOW")
+
+local UnlockBtn = Instance.new("TextButton", PageUI_p)
+UnlockBtn.Size = UDim2.new(1,0,0,44); UnlockBtn.Text = "UNLOCK MOVING: OFF"
+UnlockBtn.BackgroundColor3 = Color3.fromRGB(30,10,10); UnlockBtn.TextColor3 = Color3.new(1,1,1)
+UnlockBtn.Font = Enum.Font.SciFi; UnlockBtn.TextSize = 14; UnlockBtn.BorderSizePixel = 0; style(UnlockBtn,8,1)
+
+local SaveBtn = Instance.new("TextButton", PageUI_p)
+SaveBtn.Size = UDim2.new(1,0,0,44); SaveBtn.Text = "💾  SAVE CONFIG"
+SaveBtn.BackgroundColor3 = Color3.fromRGB(15,15,30); SaveBtn.TextColor3 = Color3.new(1,1,1)
+SaveBtn.Font = Enum.Font.SciFi; SaveBtn.TextSize = 14; SaveBtn.BorderSizePixel = 0; style(SaveBtn,8,1)
+
+-- ══════════════════════════════════════════════════════
+-- КНОПКА ОТКРЫТИЯ (плавающая)
+-- ══════════════════════════════════════════════════════
+local SideBtn = Instance.new("TextButton", ScreenGui)
+SideBtn.Name = "ToggleMenu"
+SideBtn.Size = UDim2.new(0, 44, 0, 44)
+SideBtn.Position = UDim2.new(0, 8, 0.5, 0)
+SideBtn.BackgroundColor3 = Color3.fromRGB(140, 0, 0)
+SideBtn.TextColor3 = Color3.new(1,1,1)
+SideBtn.Text = "⚔"
+SideBtn.Font = Enum.Font.SciFi
+SideBtn.TextSize = 18
+SideBtn.BorderSizePixel = 0
+style(SideBtn, 22, 2)
+table.insert(Movable_Objects, SideBtn)
+
+-- Открыть первую вкладку по умолчанию
+SwitchTab("PLAYER")
+Tabs["PLAYER"].ind.Visible = true
+
+-- Compat (LoopBtn ссылка для logic секции)
+local LoopBtn = Instance.new("Frame"); LoopBtn.Parent = ScreenGui; LoopBtn.Visible = false -- dummy, реальный через MakeToggle
+
+-- AIToggleBtn / FriendBtn dummies (logic их ищет)
+local AIToggleBtn = Instance.new("TextButton"); AIToggleBtn.Parent = ScreenGui; AIToggleBtn.Visible = false
+local FriendBtn   = Instance.new("TextButton"); FriendBtn.Parent = ScreenGui; FriendBtn.Visible = false
+
+-- MusicWidget dummy (music code references it)
+local MusicWidget = Instance.new("Frame", ScreenGui); MusicWidget.Visible = false; MusicWidget.Size = UDim2.new(0,1,0,1)
+local MusicTitle  = Instance.new("TextLabel", MusicWidget); MusicTitle.Text = ""; MusicTitle.BackgroundTransparency = 1
+local MusicStatus = Instance.new("TextLabel", MusicWidget); MusicStatus.Text = ""; MusicStatus.BackgroundTransparency = 1
+local BtnPlayPause= Instance.new("TextButton", MusicWidget); BtnPlayPause.Text = ""; BtnPlayPause.BackgroundTransparency = 1
+
+-- VolumeSlider dummy
+local VolumeSlider = Instance.new("TextBox", MusicWidget); VolumeSlider.Text = "5"; VolumeSlider.BackgroundTransparency = 1
+
+-- Music page dummies (referenced in logic)
+local MusicIDBox     = Instance.new("TextBox", MusicWidget); MusicIDBox.Text = ""
+local PlayIDBtn      = Instance.new("TextButton", MusicWidget); PlayIDBtn.Text = ""
+local YouTubeLinkBox = Instance.new("TextBox", MusicWidget); YouTubeLinkBox.Text = ""
+local PlayYTBtn      = Instance.new("TextButton", MusicWidget); PlayYTBtn.Text = ""
+local SearchBox      = Instance.new("TextBox", MusicWidget); SearchBox.Text = ""
+local SearchBtn      = Instance.new("TextButton", MusicWidget); SearchBtn.Text = ""
+local StopMusicBtn   = Instance.new("TextButton", MusicWidget); StopMusicBtn.Text = ""
+local BtnStop        = Instance.new("TextButton", MusicWidget); BtnStop.Text = ""
+local BtnSkip        = Instance.new("TextButton", MusicWidget); BtnSkip.Text = ""
+
+-- PageMusic dummy
+local PageMusic = Instance.new("Frame", ScreenGui); PageMusic.Visible = false; PageMusic.Size = UDim2.new(0,1,0,1)
+
+-- Функция makeBind (используется в addOption, но addOption больше не используется — оставим stub)
+local function makeBind(name, callback)
+    local hb = Instance.new("TextButton", ScreenGui); hb.Name="Bind_"..name; hb.Size=UDim2.new(0,50,0,50)
+    hb.Position=UDim2.new(0.85,0,0.4,0); hb.BackgroundColor3=Color3.fromRGB(15,15,15)
+    hb.Text=name:sub(1,3); hb.TextColor3=Color3.new(1,1,1); hb.Visible=false
+    hb.Active = UI_Unlocked; hb.Draggable = UI_Unlocked
+    style(hb,25); hb.MouseButton1Click:Connect(callback); table.insert(Movable_Objects, hb); return hb
+end
+
+-- Notification container
 local NotifyContainer = Instance.new("Frame", ScreenGui)
 NotifyContainer.Size = UDim2.new(0, 250, 0.4, 0)
 NotifyContainer.Position = UDim2.new(1, -260, 0.55, 0)
@@ -380,469 +999,39 @@ local function Notify(text)
     local f = Instance.new("Frame", NotifyContainer)
     f.Size = UDim2.new(1, 0, 0, 35)
     f.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-    f.BackgroundTransparency = 0.2
-    style(f, 4, 1)
-    
+    f.BackgroundTransparency = 0.2; style(f, 4, 1)
     local l = Instance.new("TextLabel", f)
-    l.Size = UDim2.new(1, -10, 1, 0)
-    l.Position = UDim2.new(0, 5, 0, 0)
-    l.BackgroundTransparency = 1
-    l.Text = text
-    l.TextColor3 = Color3.new(1, 1, 1)
-    l.Font = Enum.Font.SciFi
-    l.TextSize = 14
-    l.TextXAlignment = Enum.TextXAlignment.Left
-    
-    f.BackgroundTransparency = 1
-    l.TextTransparency = 1
-    TweenService:Create(f, TweenInfo.new(0.3), {BackgroundTransparency = 0.2}):Play()
-    TweenService:Create(l, TweenInfo.new(0.3), {TextTransparency = 0}):Play()
-    
+    l.Size = UDim2.new(1, -10, 1, 0); l.Position = UDim2.new(0, 5, 0, 0)
+    l.BackgroundTransparency = 1; l.Text = text; l.TextColor3 = Color3.new(1,1,1)
+    l.Font = Enum.Font.SciFi; l.TextSize = 14; l.TextXAlignment = Enum.TextXAlignment.Left
+    f.BackgroundTransparency = 1; l.TextTransparency = 1
+    TweenService:Create(f, TweenInfo.new(0.3), {BackgroundTransparency=0.2}):Play()
+    TweenService:Create(l, TweenInfo.new(0.3), {TextTransparency=0}):Play()
     task.delay(3, function()
-        TweenService:Create(f, TweenInfo.new(0.5), {BackgroundTransparency = 1}):Play()
-        TweenService:Create(l, TweenInfo.new(0.5), {TextTransparency = 1}):Play()
-        task.wait(0.5)
-        f:Destroy()
+        TweenService:Create(f, TweenInfo.new(0.5), {BackgroundTransparency=1}):Play()
+        TweenService:Create(l, TweenInfo.new(0.5), {TextTransparency=1}):Play()
+        task.wait(0.5); f:Destroy()
     end)
 end
 
--- // MUSIC WIDGET // --
-local MusicWidget = Instance.new("Frame", ScreenGui)
-MusicWidget.Size = UDim2.new(0, 200, 0, 120)
-MusicWidget.Position = UDim2.new(1, -210, 1, -130)
-MusicWidget.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
-MusicWidget.Visible = false
-MusicWidget.Active = true
-MusicWidget.Draggable = true
-style(MusicWidget, 8, 2)
-table.insert(Movable_Objects, MusicWidget)
-
-local MusicIcon = Instance.new("ImageLabel", MusicWidget)
-MusicIcon.Size = UDim2.new(0, 50, 0, 50)
-MusicIcon.Position = UDim2.new(0, 10, 0, 10)
-MusicIcon.BackgroundTransparency = 1
-MusicIcon.Image = "rbxassetid://6031265976"
-table.insert(RGB_Objects, {Type = "Image", Instance = MusicIcon})
-
-local MusicTitle = Instance.new("TextLabel", MusicWidget)
-MusicTitle.Size = UDim2.new(1, -70, 0, 25)
-MusicTitle.Position = UDim2.new(0, 65, 0, 10)
-MusicTitle.BackgroundTransparency = 1
-MusicTitle.Text = "NO MUSIC"
-MusicTitle.TextColor3 = Color3.new(1, 1, 1)
-MusicTitle.Font = Enum.Font.SciFi
-MusicTitle.TextSize = 14
-MusicTitle.TextXAlignment = Enum.TextXAlignment.Left
-MusicTitle.TextScaled = true
-
-local MusicStatus = Instance.new("TextLabel", MusicWidget)
-MusicStatus.Size = UDim2.new(1, -70, 0, 20)
-MusicStatus.Position = UDim2.new(0, 65, 0, 35)
-MusicStatus.BackgroundTransparency = 1
-MusicStatus.Text = "IDLE"
-MusicStatus.TextColor3 = Color3.fromRGB(150, 150, 150)
-MusicStatus.Font = Enum.Font.SciFi
-MusicStatus.TextSize = 12
-MusicStatus.TextXAlignment = Enum.TextXAlignment.Left
-
-local BtnPlayPause = Instance.new("TextButton", MusicWidget)
-BtnPlayPause.Size = UDim2.new(0.3, -5, 0, 30)
-BtnPlayPause.Position = UDim2.new(0, 10, 1, -40)
-BtnPlayPause.Text = "PLAY"
-BtnPlayPause.BackgroundColor3 = Color3.fromRGB(20, 40, 20)
-BtnPlayPause.TextColor3 = Color3.new(1, 1, 1)
-BtnPlayPause.Font = Enum.Font.SciFi
-BtnPlayPause.TextSize = 12
-style(BtnPlayPause)
-
-local BtnStop = Instance.new("TextButton", MusicWidget)
-BtnStop.Size = UDim2.new(0.3, -5, 0, 30)
-BtnStop.Position = UDim2.new(0.35, 0, 1, -40)
-BtnStop.Text = "STOP"
-BtnStop.BackgroundColor3 = Color3.fromRGB(40, 20, 20)
-BtnStop.TextColor3 = Color3.new(1, 1, 1)
-BtnStop.Font = Enum.Font.SciFi
-BtnStop.TextSize = 12
-style(BtnStop)
-
-local BtnSkip = Instance.new("TextButton", MusicWidget)
-BtnSkip.Size = UDim2.new(0.3, -5, 0, 30)
-BtnSkip.Position = UDim2.new(0.7, 0, 1, -40)
-BtnSkip.Text = "SKIP"
-BtnSkip.BackgroundColor3 = Color3.fromRGB(20, 20, 40)
-BtnSkip.TextColor3 = Color3.new(1, 1, 1)
-BtnSkip.Font = Enum.Font.SciFi
-BtnSkip.TextSize = 12
-style(BtnSkip)
-
--- // MAIN MENU // --
-local Main = Instance.new("Frame", ScreenGui); Main.Size = UDim2.new(0, 480, 0, 550); Main.Position = UDim2.new(0.1, 0, 0.2, 0); Main.BackgroundColor3 = Color3.fromRGB(10, 10, 10); Main.Visible = true; Main.Active = true; Main.Draggable = true; style(Main, 8, 2); table.insert(Movable_Objects, Main)
-
--- TABS
-local TabFrame = Instance.new("Frame", Main); TabFrame.Size = UDim2.new(1, -20, 0, 30); TabFrame.Position = UDim2.new(0, 10, 0, 50); TabFrame.BackgroundTransparency = 1
-local layoutTabs = Instance.new("UIListLayout", TabFrame); layoutTabs.FillDirection=Enum.FillDirection.Horizontal; layoutTabs.Padding=UDim.new(0,5)
-
-local function MakeTab(text)
-    local b = Instance.new("TextButton", TabFrame); b.Size=UDim2.new(0.16,0,1,0); b.BackgroundColor3=Color3.fromRGB(20,20,20); b.Text=text; b.TextColor3=Color3.new(1,1,1); b.Font=Enum.Font.SciFi; style(b); b.TextScaled = true
-    return b
-end
-local btnTabMain = MakeTab("MAIN"); local btnTabInfo = MakeTab("INFO"); local btnTabAI = MakeTab("AI"); local btnTabWorld = MakeTab("WORLD"); local btnTabUI = MakeTab("UI"); local btnTabMusic = MakeTab("MUSIC")
-
--- TITLE
-local Title = Instance.new("TextLabel", Main); Title.Size=UDim2.new(1,0,0,45); Title.BackgroundTransparency=1; Title.Text="⚔ SAURON V1 ⚔"; Title.Font=Enum.Font.SciFi; Title.TextSize=24; Title.TextColor3=Color3.new(1,1,1); table.insert(RGB_Objects, {Type="Text", Instance=Title})
-
--- // PAGES // --
-local PageMain = Instance.new("ScrollingFrame", Main); PageMain.Size=UDim2.new(1,-20,0.78,0); PageMain.Position=UDim2.new(0,10,0.18,0); PageMain.BackgroundTransparency=1; PageMain.ScrollBarThickness=2; PageMain.Visible=true; Instance.new("UIListLayout", PageMain).Padding=UDim.new(0,8)
-local PageInfo = Instance.new("Frame", Main); PageInfo.Size=UDim2.new(1,-20,0.78,0); PageInfo.Position=UDim2.new(0,10,0.18,0); PageInfo.BackgroundTransparency=1; PageInfo.Visible=false
-local PageAI = Instance.new("Frame", Main); PageAI.Size=UDim2.new(1,-20,0.78,0); PageAI.Position=UDim2.new(0,10,0.18,0); PageAI.BackgroundTransparency=1; PageAI.Visible=false
-local PageWorld = Instance.new("Frame", Main); PageWorld.Size=UDim2.new(1,-20,0.78,0); PageWorld.Position=UDim2.new(0,10,0.18,0); PageWorld.BackgroundTransparency=1; PageWorld.Visible=false
-local PageUI = Instance.new("Frame", Main); PageUI.Size=UDim2.new(1,-20,0.78,0); PageUI.Position=UDim2.new(0,10,0.18,0); PageUI.BackgroundTransparency=1; PageUI.Visible=false
-local PageMusic = Instance.new("ScrollingFrame", Main); PageMusic.Size=UDim2.new(1,-20,0.78,0); PageMusic.Position=UDim2.new(0,10,0.18,0); PageMusic.BackgroundTransparency=1; PageMusic.ScrollBarThickness=2; PageMusic.Visible=false; Instance.new("UIListLayout", PageMusic).Padding=UDim.new(0,8)
-
-btnTabMain.MouseButton1Click:Connect(function() PageMain.Visible=true; PageInfo.Visible=false; PageAI.Visible=false; PageWorld.Visible=false; PageUI.Visible=false; PageMusic.Visible=false end)
-btnTabInfo.MouseButton1Click:Connect(function() PageMain.Visible=false; PageInfo.Visible=true; PageAI.Visible=false; PageWorld.Visible=false; PageUI.Visible=false; PageMusic.Visible=false end)
-btnTabAI.MouseButton1Click:Connect(function() PageMain.Visible=false; PageInfo.Visible=false; PageAI.Visible=true; PageWorld.Visible=false; PageUI.Visible=false; PageMusic.Visible=false end)
-btnTabWorld.MouseButton1Click:Connect(function() PageMain.Visible=false; PageInfo.Visible=false; PageAI.Visible=false; PageWorld.Visible=true; PageUI.Visible=false; PageMusic.Visible=false end)
-btnTabUI.MouseButton1Click:Connect(function() PageMain.Visible=false; PageInfo.Visible=false; PageAI.Visible=false; PageWorld.Visible=false; PageUI.Visible=true; PageMusic.Visible=false end)
-btnTabMusic.MouseButton1Click:Connect(function() PageMain.Visible=false; PageInfo.Visible=false; PageAI.Visible=false; PageWorld.Visible=false; PageUI.Visible=false; PageMusic.Visible=true end)
-
--- INFO PAGE
-local InfoLabel = Instance.new("TextLabel", PageInfo); InfoLabel.Size = UDim2.new(1,0,1,0); InfoLabel.BackgroundTransparency = 1; InfoLabel.TextColor3 = Color3.new(1,1,1); InfoLabel.TextSize = 18; InfoLabel.TextYAlignment = Enum.TextYAlignment.Top; InfoLabel.Text = "Loading stats..."
-
--- // WORLD PAGE // --
-local FogBtn = Instance.new("TextButton", PageWorld); FogBtn.Size = UDim2.new(1, 0, 0, 40); FogBtn.Position=UDim2.new(0,0,0,0); FogBtn.Text = "REMOVE FOG: OFF"; FogBtn.BackgroundColor3 = Color3.fromRGB(30, 10, 10); FogBtn.TextColor3 = Color3.new(1, 1, 1); style(FogBtn)
-local AmbientBtn = Instance.new("TextButton", PageWorld); AmbientBtn.Size = UDim2.new(1, 0, 0, 40); AmbientBtn.Position=UDim2.new(0,0,0.1,0); AmbientBtn.Text = "AMBIENT SYNC: OFF"; AmbientBtn.BackgroundColor3 = Color3.fromRGB(30, 10, 10); AmbientBtn.TextColor3 = Color3.new(1, 1, 1); style(AmbientBtn)
-local SkyBox = Instance.new("TextBox", PageWorld); SkyBox.Size = UDim2.new(1, 0, 0, 40); SkyBox.Position=UDim2.new(0,0,0.25,0); SkyBox.PlaceholderText = "CUSTOM SKY ID"; SkyBox.Text = ""; SkyBox.BackgroundColor3 = Color3.fromRGB(20, 20, 20); SkyBox.TextColor3 = Color3.new(1, 1, 1); style(SkyBox)
-local SetSkyBtn = Instance.new("TextButton", PageWorld); SetSkyBtn.Size = UDim2.new(1, 0, 0, 40); SetSkyBtn.Position=UDim2.new(0,0,0.35,0); SetSkyBtn.Text = "APPLY CUSTOM SKY"; SetSkyBtn.BackgroundColor3 = Color3.fromRGB(20, 20, 20); SetSkyBtn.TextColor3 = Color3.new(1, 1, 1); style(SetSkyBtn)
-local SpaceSkyBtn = Instance.new("TextButton", PageWorld); SpaceSkyBtn.Size = UDim2.new(1, 0, 0, 40); SpaceSkyBtn.Position=UDim2.new(0,0,0.45,0); SpaceSkyBtn.Text = "SET SPACE SKY"; SpaceSkyBtn.BackgroundColor3 = Color3.fromRGB(20, 20, 40); SpaceSkyBtn.TextColor3 = Color3.new(1, 1, 1); style(SpaceSkyBtn)
-
--- // AI PAGE // --
-local AIKeyBox = Instance.new("TextBox", PageAI); AIKeyBox.Size = UDim2.new(1, 0, 0, 40); AIKeyBox.Position = UDim2.new(0,0,0,0); AIKeyBox.PlaceholderText = "GROQ API KEY"; AIKeyBox.Text = ""; AIKeyBox.BackgroundColor3 = Color3.fromRGB(20, 20, 20); AIKeyBox.TextColor3 = Color3.new(1, 1, 1); style(AIKeyBox)
-
-local ModelBtn = Instance.new("TextButton", PageAI); ModelBtn.Size = UDim2.new(1, 0, 0, 40); ModelBtn.Position = UDim2.new(0, 0, 0.09, 0); ModelBtn.Text = "MODEL: " .. GroqModels[CurrentModelIndex]; ModelBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30); ModelBtn.TextColor3 = Color3.new(1, 1, 1); ModelBtn.Font = Enum.Font.SciFi; ModelBtn.TextSize = 14; style(ModelBtn)
-
-local AIToggleBtn = Instance.new("TextButton", PageAI); AIToggleBtn.Size = UDim2.new(1, 0, 0, 40); AIToggleBtn.Position = UDim2.new(0, 0, 0.19, 0); AIToggleBtn.Text = "AI AUTOREPLY: OFF"; AIToggleBtn.BackgroundColor3 = Color3.fromRGB(30, 10, 10); AIToggleBtn.TextColor3 = Color3.new(1, 1, 1); style(AIToggleBtn)
-local FriendBtn = Instance.new("TextButton", PageAI); FriendBtn.Size = UDim2.new(1, 0, 0, 40); FriendBtn.Position = UDim2.new(0, 0, 0.29, 0); FriendBtn.Text = "FRIEND BOT: OFF"; FriendBtn.BackgroundColor3 = Color3.fromRGB(30, 10, 10); FriendBtn.TextColor3 = Color3.new(1, 1, 1); style(FriendBtn)
-local RecBtn = Instance.new("TextButton", PageAI); RecBtn.Size = UDim2.new(0.48, 0, 0, 40); RecBtn.Position = UDim2.new(0, 0, 0.49, 0); RecBtn.Text = "RECORD"; RecBtn.BackgroundColor3 = Color3.fromRGB(40, 10, 10); RecBtn.TextColor3 = Color3.new(1, 1, 1); style(RecBtn)
-local PlayBtn = Instance.new("TextButton", PageAI); PlayBtn.Size = UDim2.new(0.48, 0, 0, 40); PlayBtn.Position = UDim2.new(0.52, 0, 0.49, 0); PlayBtn.Text = "PLAY"; PlayBtn.BackgroundColor3 = Color3.fromRGB(10, 40, 10); PlayBtn.TextColor3 = Color3.new(1, 1, 1); style(PlayBtn)
-local LoopBtn = Instance.new("TextButton", PageAI); LoopBtn.Size = UDim2.new(1, 0, 0, 40); LoopBtn.Position = UDim2.new(0, 0, 0.59, 0); LoopBtn.Text = "LOOP PLAYBACK: OFF"; LoopBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30); LoopBtn.TextColor3 = Color3.new(1, 1, 1); style(LoopBtn)
-local AIStatus = Instance.new("TextLabel", PageAI); AIStatus.Size = UDim2.new(1, 0, 0, 30); AIStatus.Position = UDim2.new(0, 0, 0.71, 0); AIStatus.BackgroundTransparency = 1; AIStatus.Text = "STATUS: IDLE"; AIStatus.TextColor3 = Color3.fromRGB(150, 150, 150); style(AIStatus, 0, 0)
-
--- // UI PAGE // --
-local UnlockBtn = Instance.new("TextButton", PageUI); UnlockBtn.Size = UDim2.new(1, 0, 0, 40); UnlockBtn.Position = UDim2.new(0,0,0,0); UnlockBtn.Text = "UNLOCK MOVING: OFF"; UnlockBtn.BackgroundColor3 = Color3.fromRGB(30,10,10); UnlockBtn.TextColor3 = Color3.new(1,1,1); style(UnlockBtn)
-local SaveBtn = Instance.new("TextButton", PageUI); SaveBtn.Size = UDim2.new(1, 0, 0, 40); SaveBtn.Position = UDim2.new(0,0,0.12,0); SaveBtn.Text = "SAVE CONFIG"; SaveBtn.BackgroundColor3 = Color3.fromRGB(20,20,40); SaveBtn.TextColor3 = Color3.new(1,1,1); style(SaveBtn)
-
--- // MUSIC PAGE // --
-local MusicIDBox = Instance.new("TextBox", PageMusic); MusicIDBox.Size = UDim2.new(1, 0, 0, 40); MusicIDBox.PlaceholderText = "ROBLOX AUDIO ID"; MusicIDBox.Text = ""; MusicIDBox.BackgroundColor3 = Color3.fromRGB(20, 20, 20); MusicIDBox.TextColor3 = Color3.new(1, 1, 1); MusicIDBox.Font = Enum.Font.SciFi; MusicIDBox.TextSize = 16; style(MusicIDBox)
-
-local PlayIDBtn = Instance.new("TextButton", PageMusic); PlayIDBtn.Size = UDim2.new(1, 0, 0, 40); PlayIDBtn.Text = "▶ PLAY BY ID"; PlayIDBtn.BackgroundColor3 = Color3.fromRGB(20, 40, 20); PlayIDBtn.TextColor3 = Color3.new(1, 1, 1); PlayIDBtn.Font = Enum.Font.SciFi; PlayIDBtn.TextSize = 16; style(PlayIDBtn)
-
-local YouTubeLinkBox = Instance.new("TextBox", PageMusic); YouTubeLinkBox.Size = UDim2.new(1, 0, 0, 40); YouTubeLinkBox.PlaceholderText = "YOUTUBE LINK OR VIDEO ID"; YouTubeLinkBox.Text = ""; YouTubeLinkBox.BackgroundColor3 = Color3.fromRGB(20, 20, 20); YouTubeLinkBox.TextColor3 = Color3.new(1, 1, 1); YouTubeLinkBox.Font = Enum.Font.SciFi; YouTubeLinkBox.TextSize = 16; style(YouTubeLinkBox)
-
-local PlayYTBtn = Instance.new("TextButton", PageMusic); PlayYTBtn.Size = UDim2.new(1, 0, 0, 40); PlayYTBtn.Text = "🎵 PLAY FROM YOUTUBE"; PlayYTBtn.BackgroundColor3 = Color3.fromRGB(40, 20, 20); PlayYTBtn.TextColor3 = Color3.new(1, 1, 1); PlayYTBtn.Font = Enum.Font.SciFi; PlayYTBtn.TextSize = 16; style(PlayYTBtn)
-
-local SearchBox = Instance.new("TextBox", PageMusic); SearchBox.Size = UDim2.new(1, 0, 0, 40); SearchBox.PlaceholderText = "SEARCH MUSIC NAME"; SearchBox.Text = ""; SearchBox.BackgroundColor3 = Color3.fromRGB(20, 20, 20); SearchBox.TextColor3 = Color3.new(1, 1, 1); SearchBox.Font = Enum.Font.SciFi; SearchBox.TextSize = 16; style(SearchBox)
-
-local SearchBtn = Instance.new("TextButton", PageMusic); SearchBtn.Size = UDim2.new(1, 0, 0, 40); SearchBtn.Text = "🔍 SEARCH MUSIC"; SearchBtn.BackgroundColor3 = Color3.fromRGB(20, 20, 40); SearchBtn.TextColor3 = Color3.new(1, 1, 1); SearchBtn.Font = Enum.Font.SciFi; SearchBtn.TextSize = 16; style(SearchBtn)
-
-local StopMusicBtn = Instance.new("TextButton", PageMusic); StopMusicBtn.Size = UDim2.new(1, 0, 0, 40); StopMusicBtn.Text = "⏹ STOP MUSIC"; StopMusicBtn.BackgroundColor3 = Color3.fromRGB(40, 10, 10); StopMusicBtn.TextColor3 = Color3.new(1, 1, 1); StopMusicBtn.Font = Enum.Font.SciFi; StopMusicBtn.TextSize = 16; style(StopMusicBtn)
-
-local VolumeSlider = Instance.new("TextBox", PageMusic); VolumeSlider.Size = UDim2.new(1, 0, 0, 40); VolumeSlider.PlaceholderText = "VOLUME (0-10)"; VolumeSlider.Text = "5"; VolumeSlider.BackgroundColor3 = Color3.fromRGB(20, 20, 20); VolumeSlider.TextColor3 = Color3.new(1, 1, 1); VolumeSlider.Font = Enum.Font.SciFi; VolumeSlider.TextSize = 16; style(VolumeSlider)
-
--- FLY BUTTONS
-local btnUp = Instance.new("TextButton", PageWorld); btnUp.Size = UDim2.new(0.45, 0, 0, 40); btnUp.Position = UDim2.new(0, 0, 0.6, 0); btnUp.Text = "FLY UP"; btnUp.BackgroundColor3 = Color3.fromRGB(20,20,20); btnUp.TextColor3 = Color3.new(1,1,1); style(btnUp)
-local btnDn = Instance.new("TextButton", PageWorld); btnDn.Size = UDim2.new(0.45, 0, 0, 40); btnDn.Position = UDim2.new(0.5, 0, 0.6, 0); btnDn.Text = "FLY DOWN"; btnDn.BackgroundColor3 = Color3.fromRGB(20,20,20); btnDn.TextColor3 = Color3.new(1,1,1); style(btnDn)
-
-local SideBtn = Instance.new("TextButton", ScreenGui); SideBtn.Name = "ToggleMenu"; SideBtn.Size = UDim2.new(0, 50, 0, 50); SideBtn.Position = UDim2.new(0, 10, 0.5, 0); SideBtn.Text = "O/C"; SideBtn.BackgroundColor3 = Color3.fromRGB(20,20,20); SideBtn.TextColor3 = Color3.new(1,1,1); style(SideBtn, 16); table.insert(Movable_Objects, SideBtn)
+-- DEATH SCREEN
+local DeathScreen = Instance.new("ScreenGui", ScreenGui.Parent)
+DeathScreen.Name = "SauronDeath"; DeathScreen.Enabled = false
+local DeathLabel = Instance.new("TextLabel", DeathScreen)
+DeathLabel.Size = UDim2.new(1,0,1,0); DeathLabel.BackgroundTransparency = 1
+DeathLabel.Text = "WASTED"; DeathLabel.Font = Enum.Font.Creepster
+DeathLabel.TextSize = 100; DeathLabel.TextColor3 = Color3.fromRGB(255,0,0); DeathLabel.TextStrokeTransparency = 0
 
 -- [[ 2. LOGIC ]] --
-local States = { 
+local States = {
     Watermark = true, Aim = false, Hitbox = false, AntiKnockback = false, UnlockAll = false,
     SpdBypass = false, Fly = false, Spd = false, Jump = false, Circle = false, UsePentagram = false,
     Ghosts = false, Esp = false, RGB = false, Fullbright = false, InfJump = false, AntiAfk = true,
-    NoFog = false, AmbientSync = false, AI = false, FriendBot = false, IsFollowing = true, 
+    NoFog = false, AmbientSync = false, AI = false, FriendBot = false, IsFollowing = true,
     IsRecording = false, IsPlaying = false, LoopPlay = false, KillAura = false
-} 
+}
 local valSmooth, valHitbox, valFlySpeed, valSpeed, valBypassSpeed, valJumpPower, valRipple, valGhostRate = 0.15, 5, 5, 50, 0.11, 100, 15, 0.05
 local up, down = false, false
-
-local function EmergencyBrake()
-    local char = Player.Character; if char and char:FindFirstChild("HumanoidRootPart") then char.HumanoidRootPart.Velocity = Vector3.new(0,0,0); char.HumanoidRootPart.RotVelocity = Vector3.new(0,0,0) end
-end
-
--- [[ MUSIC FUNCTIONS ]] --
-local function PlayMusic(audioId, title)
-    if CurrentSound then 
-        CurrentSound:Stop()
-        CurrentSound:Destroy()
-        CurrentSound = nil 
-    end
-    
-    local char = Player.Character
-    if not char or not char:FindFirstChild("HumanoidRootPart") then
-        Notify("ERROR: NO CHARACTER")
-        return
-    end
-    
-    CurrentSound = Instance.new("Sound")
-    CurrentSound.Parent = char.HumanoidRootPart
-    CurrentSound.SoundId = "rbxassetid://" .. tostring(audioId)
-    CurrentSound.Volume = tonumber(VolumeSlider.Text) or 5
-    CurrentSound.Looped = true
-    CurrentSound.Playing = true
-    
-    local success = pcall(function()
-        CurrentSound:Play()
-    end)
-    
-    if success then
-        MusicPlaying = true
-        MusicTitle.Text = title or ("ID: " .. tostring(audioId))
-        MusicStatus.Text = "♪ PLAYING"
-        MusicWidget.Visible = true
-        BtnPlayPause.Text = "⏸"
-        Notify("MUSIC: " .. (title or tostring(audioId)))
-    else
-        Notify("ERROR: INVALID AUDIO ID")
-        if CurrentSound then
-            CurrentSound:Destroy()
-            CurrentSound = nil
-        end
-    end
-end
-
-local function StopMusic()
-    if CurrentSound then 
-        CurrentSound:Stop()
-        CurrentSound:Destroy()
-        CurrentSound = nil 
-    end
-    MusicPlaying = false
-    MusicTitle.Text = "NO MUSIC"
-    MusicStatus.Text = "⏹ STOPPED"
-    BtnPlayPause.Text = "▶"
-    Notify("MUSIC STOPPED")
-end
-
-local function TogglePlayPause()
-    if not CurrentSound then return end
-    if MusicPlaying then
-        CurrentSound:Pause()
-        MusicPlaying = false
-        MusicStatus.Text = "⏸ PAUSED"
-        BtnPlayPause.Text = "▶"
-    else
-        CurrentSound:Resume()
-        MusicPlaying = true
-        MusicStatus.Text = "♪ PLAYING"
-        BtnPlayPause.Text = "⏸"
-    end
-end
-
-local function ExtractYouTubeID(link)
-    local patterns = {
-        "youtube%.com/watch%?v=([%w-_]+)",
-        "youtu%.be/([%w-_]+)",
-        "youtube%.com/embed/([%w-_]+)",
-        "youtube%.com/v/([%w-_]+)"
-    }
-    
-    for _, pattern in ipairs(patterns) do
-        local id = string.match(link, pattern)
-        if id then return id end
-    end
-    
-    if string.match(link, "^[%w-_]+$") and #link == 11 then
-        return link
-    end
-    
-    return nil
-end
-
-local function SearchYouTubeToRoblox(query)
-    Notify("SEARCHING: " .. query)
-    task.spawn(function()
-        if request then
-            local success, response = pcall(function()
-                return request({
-                    Url = "https://www.roblox.com/audio/search?Keyword=" .. HttpService:UrlEncode(query),
-                    Method = "GET"
-                })
-            end)
-            
-            if success and response and response.Body then
-                local audioId = string.match(response.Body, 'data%-item%-id="(%d+)"')
-                if audioId then
-                    PlayMusic(audioId, query)
-                else
-                    Notify("NO RESULTS FOUND")
-                end
-            else
-                Notify("SEARCH FAILED")
-            end
-        else
-            Notify("HTTP NOT AVAILABLE")
-        end
-    end)
-end
-
-PlayIDBtn.MouseButton1Click:Connect(function()
-    local id = MusicIDBox.Text:gsub("%s+", "")
-    if id ~= "" then
-        local numericId = id:match("%d+")
-        if numericId then
-            PlayMusic(numericId, "Custom Audio")
-        else
-            Notify("INVALID ID FORMAT")
-        end
-    else
-        Notify("ENTER AUDIO ID")
-    end
-end)
-
-PlayYTBtn.MouseButton1Click:Connect(function()
-    local link = YouTubeLinkBox.Text:gsub("%s+", "")
-    if link ~= "" then
-        local ytId = ExtractYouTubeID(link)
-        if ytId then
-            Notify("YT ID: " .. ytId)
-            SearchYouTubeToRoblox(ytId)
-        else
-            Notify("INVALID YOUTUBE LINK")
-        end
-    else
-        Notify("ENTER YOUTUBE LINK")
-    end
-end)
-
-SearchBtn.MouseButton1Click:Connect(function()
-    local query = SearchBox.Text:gsub("%s+", " "):gsub("^%s*(.-)%s*$", "%1")
-    if query ~= "" then
-        SearchYouTubeToRoblox(query)
-    else
-        Notify("ENTER SEARCH QUERY")
-    end
-end)
-
-StopMusicBtn.MouseButton1Click:Connect(function() 
-    StopMusic() 
-end)
-
-BtnPlayPause.MouseButton1Click:Connect(function() 
-    TogglePlayPause() 
-end)
-
-BtnStop.MouseButton1Click:Connect(function() 
-    StopMusic() 
-end)
-
-BtnSkip.MouseButton1Click:Connect(function()
-    if CurrentSound then
-        CurrentSound.TimePosition = 0
-        Notify("MUSIC RESTARTED")
-    end
-end)
-
-VolumeSlider.FocusLost:Connect(function()
-    local vol = tonumber(VolumeSlider.Text)
-    if vol then
-        vol = math.clamp(vol, 0, 10)
-        VolumeSlider.Text = tostring(vol)
-        if CurrentSound then
-            CurrentSound.Volume = vol
-            Notify("VOLUME: " .. tostring(vol))
-        end
-    else
-        VolumeSlider.Text = "5"
-    end
-end)
-
--- [[ FIXED REPLAY MOVEMENT ]] --
-local function SmartMove(targetCF)
-    local char = Player.Character; if not char then return end
-    local root = char:FindFirstChild("HumanoidRootPart")
-    local hum = char:FindFirstChild("Humanoid")
-    if not root or not hum then return end
-    
-    local car = nil; if hum.SeatPart then car = hum.SeatPart.Parent end
-    if car and car:IsA("Model") then 
-        local mainPart = car.PrimaryPart or hum.SeatPart
-        mainPart.Velocity = Vector3.new(0,0,0)
-        mainPart.CFrame = targetCF 
-    else 
-        root.CFrame = targetCF
-        root.Velocity = Vector3.new(0,0,0)
-    end
-end
-
-local function SendChat(msg)
-    if game:GetService("TextChatService").ChatVersion == Enum.ChatVersion.TextChatService then
-        pcall(function() game:GetService("TextChatService").TextChannels.RBXGeneral:SendAsync(msg) end)
-    else
-        game:GetService("ReplicatedStorage").DefaultChatSystemChatEvents.SayMessageRequest:FireServer(msg, "All")
-    end
-end
-
-btnUp.MouseButton1Down:Connect(function() up = true end); btnUp.MouseButton1Up:Connect(function() up = false end)
-btnDn.MouseButton1Down:Connect(function() down = true end); btnDn.MouseButton1Up:Connect(function() down = false end)
-
-local function makeBind(name, callback)
-    local hb = Instance.new("TextButton", ScreenGui); hb.Name="Bind_"..name; hb.Size=UDim2.new(0,50,0,50); hb.Position=UDim2.new(0.85,0,0.4,0); hb.BackgroundColor3=Color3.fromRGB(15,15,15); hb.Text=name:sub(1,3); hb.TextColor3=Color3.new(1,1,1); hb.Visible=false
-    hb.Active = UI_Unlocked; hb.Draggable = UI_Unlocked
-    style(hb,25); hb.MouseButton1Click:Connect(callback); table.insert(Movable_Objects, hb); return hb
-end
-
-local btnTheme = Instance.new("TextButton", PageMain); btnTheme.Size = UDim2.new(1, 0, 0, 40); btnTheme.BackgroundColor3 = Color3.fromRGB(25, 25, 25); btnTheme.Text = "THEME: " .. Themes[CurrentThemeIndex]; btnTheme.TextColor3 = Color3.new(1,1,1); btnTheme.Font = Enum.Font.SciFi; btnTheme.TextSize = 16; style(btnTheme)
-btnTheme.MouseButton1Click:Connect(function() CurrentThemeIndex = CurrentThemeIndex + 1; if CurrentThemeIndex > #Themes then CurrentThemeIndex = 1 end; btnTheme.Text = "THEME: " .. Themes[CurrentThemeIndex] end)
-
-ModelBtn.MouseButton1Click:Connect(function()
-    CurrentModelIndex = CurrentModelIndex + 1
-    if CurrentModelIndex > #GroqModels then CurrentModelIndex = 1 end
-    ModelBtn.Text = "MODEL: " .. GroqModels[CurrentModelIndex]
-end)
-
-local function addOption(name, key, useInput, defaultInputVal, inputCallback)
-    local f = Instance.new("Frame", PageMain); f.Size = UDim2.new(1, 0, 0, 40); f.BackgroundTransparency = 1
-    local btnSize = useInput and 0.5 or 0.75
-    local b = Instance.new("TextButton", f); b.Size = UDim2.new(btnSize, -5, 1, 0); b.Text = name; b.BackgroundColor3 = Color3.fromRGB(20, 20, 20); b.TextColor3 = Color3.new(1,1,1); style(b)
-    if States[key] then b.BackgroundColor3 = Color3.fromRGB(40, 40, 40) end
-    
-    local function Toggle()
-        States[key] = not States[key]
-        b.BackgroundColor3 = States[key] and Color3.fromRGB(40, 40, 40) or Color3.fromRGB(20, 20, 20)
-        Notify(name .. (States[key] and " [ON]" or " [OFF]"))
-    end
-    
-    local hk = makeBind(name, Toggle)
-    b.MouseButton1Click:Connect(Toggle)
-    
-    local bb = Instance.new("TextButton", f); bb.Size = UDim2.new(0.25, 0, 1, 0); bb.Position = UDim2.new(0.75, 0, 0, 0); bb.Text = "BIND"; style(bb)
-    bb.MouseButton1Click:Connect(function() hk.Visible = not hk.Visible end)
-    
-    if useInput then
-        local inp = Instance.new("TextBox", f); inp.Size = UDim2.new(0.25, -5, 1, 0); inp.Position = UDim2.new(0.5, 0, 0, 0); inp.Text = tostring(defaultInputVal); inp.BackgroundColor3 = Color3.fromRGB(15,15,15); inp.TextColor3 = Color3.new(1,1,1); style(inp)
-        inp.FocusLost:Connect(function() local n = tonumber(inp.Text); if n then inputCallback(n) else inp.Text = tostring(defaultInputVal) end end)
-    end
-end
-
--- [ OPTIONS ] --
-addOption("SHOW LOGO", "Watermark", false) 
-addOption("HUMAN AIM", "Aim", true, valSmooth, function(v) valSmooth = math.clamp(v, 0.01, 1) end)
-addOption("ANTI KNOCKBACK", "AntiKnockback", false) 
-addOption("INF ZOOM", "UnlockAll", false) 
-addOption("SPEED BYPASS", "SpdBypass", true, valBypassSpeed, function(v) valBypassSpeed = v end)
-addOption("KILL AURA", "KillAura", false)
-addOption("BIG HITBOX", "Hitbox", true, valHitbox, function(v) valHitbox = v end)
-addOption("FLY BYPASS", "Fly", true, valFlySpeed, function(v) valFlySpeed = v end)
-addOption("RAGE SPEED", "Spd", true, valSpeed, function(v) valSpeed = v end)
-addOption("SUPER JUMP", "Jump", true, valJumpPower, function(v) valJumpPower = v end)
-addOption("JUMP RIPPLE", "Circle", true, valRipple, function(v) valRipple = v end)
-addOption("PENTAGRAM MODE", "UsePentagram", false) 
-addOption("GHOST TRAIL", "Ghosts", true, valGhostRate, function(v) valGhostRate = math.clamp(v, 0.01, 2) end) 
-addOption("ESP HIGHLIGHT", "Esp", false)
-addOption("SKIN COLOR", "RGB", false) 
-addOption("FULLBRIGHT", "Fullbright", false) 
-addOption("INF JUMP", "InfJump", false)
 
 SideBtn.MouseButton1Click:Connect(function() Main.Visible = not Main.Visible end)
 
@@ -1287,6 +1476,70 @@ local ESP_States = {
     TRACER   = false,
     CHAMS    = false,   -- уже есть States.Esp но отдельно для compat
 }
+
+-- ── BUILD ESP TAB TOGGLES (after ESP_States defined) ─────
+do
+    local function MakeESPTile(parent, label, key, icon)
+        local row = Instance.new("Frame", parent)
+        row.Size = UDim2.new(1, 0, 0, 44)
+        row.BackgroundColor3 = Color3.fromRGB(14, 14, 14)
+        row.BorderSizePixel = 0
+        local rc = Instance.new("UICorner", row); rc.CornerRadius = UDim.new(0, 8)
+        local rs = Instance.new("UIStroke", row); rs.Thickness = 1
+        rs.Color = ESP_States[key] and Color3.fromRGB(160,0,0) or Color3.fromRGB(40,40,40)
+        table.insert(RGB_Objects, {Type="Stroke", Instance=rs})
+
+        local iLbl = Instance.new("TextLabel", row)
+        iLbl.Size = UDim2.new(0,30,1,0); iLbl.Position = UDim2.new(0,10,0,0)
+        iLbl.BackgroundTransparency=1; iLbl.Text=icon; iLbl.TextSize=16; iLbl.Font=Enum.Font.SciFi
+
+        local tLbl = Instance.new("TextLabel", row)
+        tLbl.Size = UDim2.new(1,-90,1,0); tLbl.Position = UDim2.new(0,44,0,0)
+        tLbl.BackgroundTransparency=1; tLbl.Text=label
+        tLbl.Font=Enum.Font.SciFi; tLbl.TextSize=14
+        tLbl.TextColor3=Color3.fromRGB(220,220,220); tLbl.TextXAlignment=Enum.TextXAlignment.Left
+
+        -- Пилюля
+        local pill = Instance.new("Frame", row)
+        pill.Size = UDim2.new(0,44,0,22); pill.Position = UDim2.new(1,-54,0.5,-11)
+        pill.BackgroundColor3 = ESP_States[key] and Color3.fromRGB(180,0,0) or Color3.fromRGB(35,35,35)
+        pill.BorderSizePixel=0
+        Instance.new("UICorner",pill).CornerRadius=UDim.new(1,0)
+        local dot = Instance.new("Frame",pill)
+        dot.Size=UDim2.new(0,16,0,16)
+        dot.Position = ESP_States[key] and UDim2.new(1,-19,0.5,-8) or UDim2.new(0,3,0.5,-8)
+        dot.BackgroundColor3=Color3.new(1,1,1); dot.BorderSizePixel=0
+        Instance.new("UICorner",dot).CornerRadius=UDim.new(1,0)
+
+        local btn = Instance.new("TextButton",row)
+        btn.Size=UDim2.new(1,0,1,0); btn.BackgroundTransparency=1; btn.Text=""
+        btn.MouseButton1Click:Connect(function()
+            if key == "RADAR_E" then
+                RADAR_ESP = not RADAR_ESP
+                ESP_States[key] = RADAR_ESP
+                if RadarFrame then RadarFrame.Visible = RADAR_ESP end
+            else
+                ESP_States[key] = not ESP_States[key]
+            end
+            local on = ESP_States[key]
+            TweenService:Create(pill,TweenInfo.new(0.15),{BackgroundColor3=on and Color3.fromRGB(180,0,0) or Color3.fromRGB(35,35,35)}):Play()
+            TweenService:Create(dot,TweenInfo.new(0.15),{Position=on and UDim2.new(1,-19,0.5,-8) or UDim2.new(0,3,0.5,-8)}):Play()
+            rs.Color = on and Color3.fromRGB(160,0,0) or Color3.fromRGB(40,40,40)
+            Notify(label .. (on and " ON" or " OFF"))
+        end)
+        return row
+    end
+
+    MakeSection(PageESP, "ESP OPTIONS")
+    MakeESPTile(PageESP, "BOX",        "BOX",      "📦")
+    MakeESPTile(PageESP, "NAMETAG",    "NAME",     "👤")
+    MakeESPTile(PageESP, "HEALTH BAR", "HEALTH",   "❤")
+    MakeESPTile(PageESP, "DISTANCE",   "DISTANCE", "📏")
+    MakeESPTile(PageESP, "SKELETON",   "SKELETON", "💀")
+    MakeESPTile(PageESP, "TRACER",     "TRACER",   "➡")
+    MakeESPTile(PageESP, "CHAMS",      "CHAMS",    "🎨")
+    MakeESPTile(PageESP, "RADAR",      "RADAR_E",  "🛰")
+end
 
 -- ── TILES PANEL (плитки для включения ESP) ──────────────
 local ESPPanel = Instance.new("Frame", ScreenGui)
